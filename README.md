@@ -4,9 +4,13 @@ An MCP server that provides fast file searching capabilities using the Everythin
 
 ## Prerequisites
 
-- Windows operating system
-- [Everything](https://www.voidtools.com/) installed and running
-- Everything SDK installed
+1. Windows operating system (required - this server only works on Windows)
+2. [Everything](https://www.voidtools.com/) search utility:
+   - Download and install from https://www.voidtools.com/
+   - Make sure the Everything service is running
+3. Everything SDK:
+   - Download from https://www.voidtools.com/support/everything/sdk/
+   - Extract the SDK files to a location on your system
 
 ## Installation
 
@@ -17,16 +21,11 @@ use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-server
 
 ## Configuration
 
-The server requires the Everything SDK DLL to be available. You can configure the DLL path in two ways:
+The server requires the Everything SDK DLL to be available:
 
-1. Environment variable (recommended):
+Environment variable:
    ```
    EVERYTHING_SDK_PATH=path\to\Everything64.dll
-   ```
-
-2. Default path (fallback):
-   ```
-   D:\dev\tools\Everything-SDK\dll\Everything64.dll
    ```
 
 ### Usage with Claude Desktop
@@ -36,8 +35,8 @@ Add this to your `claude_desktop_config.json`:
 ```json
 "mcpServers": {
   "everything-search": {
-    "command": "uvx",
-    "args": ["mcp-server-everything-search"],
+    "command": "uv",
+    "args": ["--directory", "path/to/mcp-everything-search/src/mcp_server_everything_search", "run", "mcp-server-everything-search"],
     "env": {
       "EVERYTHING_SDK_PATH": "path/to/Everything64.dll"
     }
