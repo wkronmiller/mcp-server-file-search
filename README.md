@@ -7,17 +7,20 @@ An MCP server that provides fast file searching capabilities using the Everythin
 1. Windows operating system (required - this server only works on Windows)
 2. [Everything](https://www.voidtools.com/) search utility:
    - Download and install from https://www.voidtools.com/
-   - Make sure the Everything service is running
+   - **Make sure the Everything service is running**
 3. Everything SDK:
    - Download from https://www.voidtools.com/support/everything/sdk/
    - Extract the SDK files to a location on your system
 
 ## Installation
 
-### Using uv (recommended)
-
-When using [`uv`](https://docs.astral.sh/uv/) no specific installation is needed. We will
-use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-server-everything-search*.
+1. Make sure you have Python 3.10+ installed
+2. Clone this repository `git clone https://github.com/mamertofabian/mcp-everything-search.git`
+3. Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already
+4. From the project root directory, run:
+   ```bash
+   uv pip install .
+   ```
 
 ## Configuration
 
@@ -66,30 +69,6 @@ Response includes:
 - File/folder path
 - File size in bytes
 - Last modified date
-
-## Development
-
-If you are doing local development, you can run the server directly:
-
-```bash
-cd path/to/servers/src/everything-search
-uvx mcp-server-everything-search
-```
-
-## Debugging
-
-You can use the MCP inspector to debug the server:
-
-```bash
-npx @modelcontextprotocol/inspector uvx mcp-server-everything-search
-```
-
-Or if you're developing on it:
-
-```bash
-cd path/to/servers/src/everything-search
-npx @modelcontextprotocol/inspector uvx mcp-server-everything-search
-```
 
 ## License
 
