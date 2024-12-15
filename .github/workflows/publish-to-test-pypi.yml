@@ -93,6 +93,7 @@ jobs:
 
   publish-to-testpypi:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
+    if: github.ref == 'refs/heads/dev'
     needs:
     - build
     runs-on: ubuntu-latest
