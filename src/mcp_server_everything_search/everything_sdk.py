@@ -274,4 +274,7 @@ class EverythingSDK:
                 print(f"Debug: Error processing result {i}: {e}", file=sys.stderr)
                 continue
 
+        print("Debug: Resetting Everything SDK", file=sys.stderr)
+        self.dll.Everything_Reset()
+
         return results
