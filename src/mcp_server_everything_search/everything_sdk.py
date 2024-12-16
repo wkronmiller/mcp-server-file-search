@@ -3,6 +3,7 @@
 import ctypes
 import datetime
 import struct
+import sys
 from typing import Any, List
 from pydantic import BaseModel
 
@@ -83,13 +84,35 @@ class SearchResult(BaseModel):
     highlighted_filename: str | None = None
     highlighted_path: str | None = None
 
+class EverythingError(Exception):
+    """Custom exception for Everything SDK errors."""
+    def __init__(self, error_code: int):
+        self.error_code = error_code
+        super().__init__(self._get_error_message())
+    
+    def _get_error_message(self) -> str:
+        error_messages = {
+            EVERYTHING_ERROR_MEMORY: "Failed to allocate memory",
+            EVERYTHING_ERROR_IPC: "IPC failed (Everything service not running?)",
+            EVERYTHING_ERROR_REGISTERCLASSEX: "Failed to register window class",
+            EVERYTHING_ERROR_CREATEWINDOW: "Failed to create window",
+            EVERYTHING_ERROR_CREATETHREAD: "Failed to create thread",
+            EVERYTHING_ERROR_INVALIDINDEX: "Invalid index",
+            EVERYTHING_ERROR_INVALIDCALL: "Invalid call"
+        }
+        return error_messages.get(self.error_code, f"Unknown error: {self.error_code}")
+
 class EverythingSDK:
     """Wrapper for Everything SDK functionality."""
     
     def __init__(self, dll_path: str):
         """Initialize Everything SDK with the specified DLL path."""
-        self.dll = ctypes.WinDLL(dll_path)
-        self._configure_dll()
+        try:
+            self.dll = ctypes.WinDLL(dll_path)
+            self._configure_dll()
+        except Exception as e:
+            print(f"Failed to load Everything SDK DLL: {e}", file=sys.stderr)
+            raise
 
     def _configure_dll(self):
         """Configure DLL function signatures."""
@@ -103,13 +126,26 @@ class EverythingSDK:
         self.dll.Everything_SetSort.argtypes = [ctypes.c_uint]
         self.dll.Everything_SetRequestFlags.argtypes = [ctypes.c_uint]
 
+        # Query function
+        self.dll.Everything_QueryW.argtypes = [ctypes.c_bool]
+        self.dll.Everything_QueryW.restype = ctypes.c_bool
+
         # Result getters
+        self.dll.Everything_GetNumResults.restype = ctypes.c_uint
+        self.dll.Everything_GetLastError.restype = ctypes.c_uint
+        
         self.dll.Everything_GetResultFileNameW.argtypes = [ctypes.c_uint]
         self.dll.Everything_GetResultFileNameW.restype = ctypes.c_wchar_p
         self.dll.Everything_GetResultExtensionW.argtypes = [ctypes.c_uint]
         self.dll.Everything_GetResultExtensionW.restype = ctypes.c_wchar_p
         self.dll.Everything_GetResultPathW.argtypes = [ctypes.c_uint]
         self.dll.Everything_GetResultPathW.restype = ctypes.c_wchar_p
+        
+        self.dll.Everything_GetResultFullPathNameW.argtypes = [
+            ctypes.c_uint,
+            ctypes.c_wchar_p,
+            ctypes.c_uint
+        ]
         
         self.dll.Everything_GetResultDateCreated.argtypes = [
             ctypes.c_uint, 
@@ -135,6 +171,12 @@ class EverythingSDK:
         self.dll.Everything_GetResultHighlightedPathW.argtypes = [ctypes.c_uint]
         self.dll.Everything_GetResultHighlightedPathW.restype = ctypes.c_wchar_p
 
+    def _check_error(self):
+        """Check for Everything SDK errors and raise appropriate exception."""
+        error_code = self.dll.Everything_GetLastError()
+        if error_code != EVERYTHING_OK:
+            raise EverythingError(error_code)
+
     def _get_time(self, filetime: int) -> datetime.datetime:
         """Convert Windows filetime to Python datetime."""
         microsecs = (filetime - WINDOWS_TICKS_TO_POSIX_EPOCH) / WINDOWS_TICKS
@@ -152,6 +194,8 @@ class EverythingSDK:
         request_flags: int | None = None
     ) -> List[SearchResult]:
         """Perform file search using Everything SDK."""
+        print(f"Debug: Setting up search with query: {query}", file=sys.stderr)
+        
         # Set up search parameters
         self.dll.Everything_SetSearchW(query)
         self.dll.Everything_SetMatchPath(match_path)
@@ -179,9 +223,13 @@ class EverythingSDK:
         self.dll.Everything_SetRequestFlags(request_flags)
 
         # Execute search
-        self.dll.Everything_QueryW(True)
+        print("Debug: Executing search query", file=sys.stderr)
+        if not self.dll.Everything_QueryW(True):
+            self._check_error()
+            raise RuntimeError("Search query failed")
         
         # Get results
+        print("Debug: Getting search results", file=sys.stderr)
         num_results = min(self.dll.Everything_GetNumResults(), max_results)
         results = []
 
@@ -192,34 +240,38 @@ class EverythingSDK:
         file_size = ctypes.c_ulonglong()
 
         for i in range(num_results):
-            self.dll.Everything_GetResultFullPathNameW(i, filename_buffer, 260)
-            
-            # Get timestamps
-            self.dll.Everything_GetResultDateCreated(i, date_created)
-            self.dll.Everything_GetResultDateModified(i, date_modified)
-            self.dll.Everything_GetResultDateAccessed(i, date_accessed)
-            self.dll.Everything_GetResultSize(i, file_size)
+            try:
+                self.dll.Everything_GetResultFullPathNameW(i, filename_buffer, 260)
+                
+                # Get timestamps
+                self.dll.Everything_GetResultDateCreated(i, date_created)
+                self.dll.Everything_GetResultDateModified(i, date_modified)
+                self.dll.Everything_GetResultDateAccessed(i, date_accessed)
+                self.dll.Everything_GetResultSize(i, file_size)
 
-            # Get other attributes
-            filename = self.dll.Everything_GetResultFileNameW(i)
-            extension = self.dll.Everything_GetResultExtensionW(i)
-            attributes = self.dll.Everything_GetResultAttributes(i)
-            run_count = self.dll.Everything_GetResultRunCount(i)
-            highlighted_filename = self.dll.Everything_GetResultHighlightedFileNameW(i)
-            highlighted_path = self.dll.Everything_GetResultHighlightedPathW(i)
+                # Get other attributes
+                filename = self.dll.Everything_GetResultFileNameW(i)
+                extension = self.dll.Everything_GetResultExtensionW(i)
+                attributes = self.dll.Everything_GetResultAttributes(i)
+                run_count = self.dll.Everything_GetResultRunCount(i)
+                highlighted_filename = self.dll.Everything_GetResultHighlightedFileNameW(i)
+                highlighted_path = self.dll.Everything_GetResultHighlightedPathW(i)
 
-            results.append(SearchResult(
-                path=filename_buffer.value,
-                filename=filename,
-                extension=extension,
-                size=file_size.value,
-                created=self._get_time(date_created.value).isoformat() if date_created.value else None,
-                modified=self._get_time(date_modified.value).isoformat() if date_modified.value else None,
-                accessed=self._get_time(date_accessed.value).isoformat() if date_accessed.value else None,
-                attributes=attributes,
-                run_count=run_count,
-                highlighted_filename=highlighted_filename,
-                highlighted_path=highlighted_path
-            ))
+                results.append(SearchResult(
+                    path=filename_buffer.value,
+                    filename=filename,
+                    extension=extension,
+                    size=file_size.value,
+                    created=self._get_time(date_created.value).isoformat() if date_created.value else None,
+                    modified=self._get_time(date_modified.value).isoformat() if date_modified.value else None,
+                    accessed=self._get_time(date_accessed.value).isoformat() if date_accessed.value else None,
+                    attributes=attributes,
+                    run_count=run_count,
+                    highlighted_filename=highlighted_filename,
+                    highlighted_path=highlighted_path
+                ))
+            except Exception as e:
+                print(f"Debug: Error processing result {i}: {e}", file=sys.stderr)
+                continue
 
         return results

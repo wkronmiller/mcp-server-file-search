@@ -4,7 +4,7 @@ import ctypes
 import os
 import sys
 from enum import IntEnum
-from typing import Any, Dict, List, Optional
+from typing import Literal
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -13,7 +13,6 @@ from pydantic import BaseModel, Field
 
 from .everything_sdk import (
     EverythingSDK,
-    SearchResult,
     EVERYTHING_SORT_NAME_ASCENDING,
     EVERYTHING_SORT_NAME_DESCENDING,
     EVERYTHING_SORT_PATH_ASCENDING,
@@ -29,7 +28,22 @@ from .everything_sdk import (
 )
 
 class SortOption(IntEnum):
-    """Sort options for search results."""
+    """Sort options for search results.
+    
+    Available options:
+    - NAME_ASC (1): Sort by filename in ascending order
+    - NAME_DESC (2): Sort by filename in descending order
+    - PATH_ASC (3): Sort by full path in ascending order
+    - PATH_DESC (4): Sort by full path in descending order
+    - SIZE_ASC (5): Sort by file size in ascending order (smallest first)
+    - SIZE_DESC (6): Sort by file size in descending order (largest first)
+    - EXT_ASC (7): Sort by file extension in ascending order
+    - EXT_DESC (8): Sort by file extension in descending order
+    - CREATED_ASC (11): Sort by creation date in ascending order (oldest first)
+    - CREATED_DESC (12): Sort by creation date in descending order (newest first)
+    - MODIFIED_ASC (13): Sort by modification date in ascending order (oldest first)
+    - MODIFIED_DESC (14): Sort by modification date in descending order (newest first)
+    """
     NAME_ASC = EVERYTHING_SORT_NAME_ASCENDING
     NAME_DESC = EVERYTHING_SORT_NAME_DESCENDING
     PATH_ASC = EVERYTHING_SORT_PATH_ASCENDING
@@ -45,13 +59,51 @@ class SortOption(IntEnum):
 
 class SearchQuery(BaseModel):
     """Model for search query parameters."""
-    query: str
-    max_results: int = Field(default=100, ge=1, le=1000, description="Maximum number of results to return (1-1000)")
-    match_path: bool = Field(default=False, description="Match against full path instead of filename only")
-    match_case: bool = Field(default=False, description="Enable case-sensitive search")
-    match_whole_word: bool = Field(default=False, description="Match whole words only")
-    match_regex: bool = Field(default=False, description="Enable regex search")
-    sort_by: SortOption = Field(default=SortOption.NAME_ASC, description="Sort order for results")
+    query: str = Field(
+        description="Search query string. Supports wildcards (* and ?) and boolean operators (AND, OR, NOT)"
+    )
+    max_results: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum number of results to return (1-1000)"
+    )
+    match_path: bool = Field(
+        default=False,
+        description="Match against full path instead of filename only"
+    )
+    match_case: bool = Field(
+        default=False,
+        description="Enable case-sensitive search"
+    )
+    match_whole_word: bool = Field(
+        default=False,
+        description="Match whole words only"
+    )
+    match_regex: bool = Field(
+        default=False,
+        description="Enable regex search"
+    )
+    sort_by: SortOption = Field(
+        default=SortOption.NAME_ASC,
+        description="""Sort order for results. Available options:
+        - 1 (NAME_ASC): Sort by filename (A to Z)
+        - 2 (NAME_DESC): Sort by filename (Z to A)
+        - 3 (PATH_ASC): Sort by path (A to Z)
+        - 4 (PATH_DESC): Sort by path (Z to A)
+        - 5 (SIZE_ASC): Sort by size (smallest first)
+        - 6 (SIZE_DESC): Sort by size (largest first)
+        - 7 (EXT_ASC): Sort by extension (A to Z)
+        - 8 (EXT_DESC): Sort by extension (Z to A)
+        - 11 (CREATED_ASC): Sort by creation date (oldest first)
+        - 12 (CREATED_DESC): Sort by creation date (newest first)
+        - 13 (MODIFIED_ASC): Sort by modification date (oldest first)
+        - 14 (MODIFIED_DESC): Sort by modification date (newest first)"""
+    )
+
+    class Config:
+        """Pydantic model configuration."""
+        use_enum_values = True  # Use enum values in schema
 
 async def serve() -> None:
     """Run the server."""
@@ -66,8 +118,17 @@ async def serve() -> None:
         return [
             Tool(
                 name="search",
-                description="Search for files and folders using Everything SDK",
-                inputSchema=SearchQuery.schema(),
+                description="""Search for files and folders using Everything SDK.
+                
+                Features:
+                - Fast file and folder search across all indexed drives
+                - Support for wildcards and boolean operators
+                - Multiple sort options (name, path, size, dates)
+                - Case-sensitive and whole word matching
+                - Regular expression support
+                - Path matching
+                """,
+                inputSchema=SearchQuery.model_json_schema(),
             ),
         ]
 
@@ -93,6 +154,10 @@ async def serve() -> None:
 
         try:
             query = SearchQuery(**arguments)
+            # Add debug logging
+            print(f"Debug: Executing search with query: {query.query}", file=sys.stderr)
+            print(f"Debug: Sort by: {query.sort_by}", file=sys.stderr)
+            
             results = everything_sdk.search_files(
                 query=query.query,
                 max_results=query.max_results,
@@ -100,7 +165,7 @@ async def serve() -> None:
                 match_case=query.match_case,
                 match_whole_word=query.match_whole_word,
                 match_regex=query.match_regex,
-                sort_by=query.sort_by.value
+                sort_by=query.sort_by
             )
             
             return [TextContent(
@@ -119,6 +184,9 @@ async def serve() -> None:
                 ])
             )]
         except Exception as e:
+            # Add more detailed error logging
+            import traceback
+            print(f"Debug: Error details:\n{traceback.format_exc()}", file=sys.stderr)
             return [TextContent(
                 type="text",
                 text=f"Search failed: {str(e)}"
