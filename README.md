@@ -9,8 +9,25 @@ An MCP server that provides fast file searching capabilities using the Everythin
 Search for files and folders using Everything SDK.
 
 Parameters:
-- `query` (required): Search query string
+- `query` (required): Search query string. Supports wildcards (* and ?) and boolean operators (AND, OR, NOT)
 - `max_results` (optional): Maximum number of results to return (default: 100, max: 1000)
+- `match_path` (optional): Match against full path instead of filename only (default: false)
+- `match_case` (optional): Enable case-sensitive search (default: false)
+- `match_whole_word` (optional): Match whole words only (default: false)
+- `match_regex` (optional): Enable regex search (default: false)
+- `sort_by` (optional): Sort order for results (default: 1). Available options:
+  - 1 (NAME_ASC): Sort by filename (A to Z)
+  - 2 (NAME_DESC): Sort by filename (Z to A)
+  - 3 (PATH_ASC): Sort by path (A to Z)
+  - 4 (PATH_DESC): Sort by path (Z to A)
+  - 5 (SIZE_ASC): Sort by size (smallest first)
+  - 6 (SIZE_DESC): Sort by size (largest first)
+  - 7 (EXT_ASC): Sort by extension (A to Z)
+  - 8 (EXT_DESC): Sort by extension (Z to A)
+  - 11 (CREATED_ASC): Sort by creation date (oldest first)
+  - 12 (CREATED_DESC): Sort by creation date (newest first)
+  - 13 (MODIFIED_ASC): Sort by modification date (oldest first)
+  - 14 (MODIFIED_DESC): Sort by modification date (newest first)
 
 Example:
 ```json
