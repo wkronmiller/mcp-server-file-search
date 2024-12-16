@@ -5,6 +5,8 @@ on:
     branches:
       - dev
       - main
+    tags:
+      - '*'  # This will trigger the workflow on any tag push
 
 jobs:
   build:
