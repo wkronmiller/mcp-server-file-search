@@ -9,7 +9,7 @@ An MCP server that provides fast file searching capabilities using the Everythin
 Search for files and folders using Everything SDK.
 
 Parameters:
-- `query` (required): Search query string. Supports wildcards (* and ?) and boolean operators (AND, OR, NOT)
+- `query` (required): Search query string. Supports wildcards (* and ?)
 - `max_results` (optional): Maximum number of results to return (default: 100, max: 1000)
 - `match_path` (optional): Match against full path instead of filename only (default: false)
 - `match_case` (optional): Enable case-sensitive search (default: false)

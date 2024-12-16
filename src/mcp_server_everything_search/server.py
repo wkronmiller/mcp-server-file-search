@@ -60,7 +60,7 @@ class SortOption(IntEnum):
 class SearchQuery(BaseModel):
     """Model for search query parameters."""
     query: str = Field(
-        description="Search query string. Supports wildcards (* and ?) and boolean operators (AND, OR, NOT)"
+        description="Search query string. Supports wildcards (* and ?)"
     )
     max_results: int = Field(
         default=100,
