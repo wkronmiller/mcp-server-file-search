@@ -7,11 +7,60 @@ from typing import Any, List
 from pydantic import BaseModel
 
 # Everything SDK constants
+EVERYTHING_OK = 0
+EVERYTHING_ERROR_MEMORY = 1
+EVERYTHING_ERROR_IPC = 2
+EVERYTHING_ERROR_REGISTERCLASSEX = 3
+EVERYTHING_ERROR_CREATEWINDOW = 4
+EVERYTHING_ERROR_CREATETHREAD = 5
+EVERYTHING_ERROR_INVALIDINDEX = 6
+EVERYTHING_ERROR_INVALIDCALL = 7
+
+# Request flags
 EVERYTHING_REQUEST_FILE_NAME = 0x00000001
 EVERYTHING_REQUEST_PATH = 0x00000002
 EVERYTHING_REQUEST_FULL_PATH_AND_FILE_NAME = 0x00000004
+EVERYTHING_REQUEST_EXTENSION = 0x00000008
 EVERYTHING_REQUEST_SIZE = 0x00000010
+EVERYTHING_REQUEST_DATE_CREATED = 0x00000020
 EVERYTHING_REQUEST_DATE_MODIFIED = 0x00000040
+EVERYTHING_REQUEST_DATE_ACCESSED = 0x00000080
+EVERYTHING_REQUEST_ATTRIBUTES = 0x00000100
+EVERYTHING_REQUEST_FILE_LIST_FILE_NAME = 0x00000200
+EVERYTHING_REQUEST_RUN_COUNT = 0x00000400
+EVERYTHING_REQUEST_DATE_RUN = 0x00000800
+EVERYTHING_REQUEST_DATE_RECENTLY_CHANGED = 0x00001000
+EVERYTHING_REQUEST_HIGHLIGHTED_FILE_NAME = 0x00002000
+EVERYTHING_REQUEST_HIGHLIGHTED_PATH = 0x00004000
+EVERYTHING_REQUEST_HIGHLIGHTED_FULL_PATH_AND_FILE_NAME = 0x00008000
+
+# Sort options
+EVERYTHING_SORT_NAME_ASCENDING = 1
+EVERYTHING_SORT_NAME_DESCENDING = 2
+EVERYTHING_SORT_PATH_ASCENDING = 3
+EVERYTHING_SORT_PATH_DESCENDING = 4
+EVERYTHING_SORT_SIZE_ASCENDING = 5
+EVERYTHING_SORT_SIZE_DESCENDING = 6
+EVERYTHING_SORT_EXTENSION_ASCENDING = 7
+EVERYTHING_SORT_EXTENSION_DESCENDING = 8
+EVERYTHING_SORT_TYPE_NAME_ASCENDING = 9
+EVERYTHING_SORT_TYPE_NAME_DESCENDING = 10
+EVERYTHING_SORT_DATE_CREATED_ASCENDING = 11
+EVERYTHING_SORT_DATE_CREATED_DESCENDING = 12
+EVERYTHING_SORT_DATE_MODIFIED_ASCENDING = 13
+EVERYTHING_SORT_DATE_MODIFIED_DESCENDING = 14
+EVERYTHING_SORT_ATTRIBUTES_ASCENDING = 15
+EVERYTHING_SORT_ATTRIBUTES_DESCENDING = 16
+EVERYTHING_SORT_FILE_LIST_FILENAME_ASCENDING = 17
+EVERYTHING_SORT_FILE_LIST_FILENAME_DESCENDING = 18
+EVERYTHING_SORT_RUN_COUNT_ASCENDING = 19
+EVERYTHING_SORT_RUN_COUNT_DESCENDING = 20
+EVERYTHING_SORT_DATE_RECENTLY_CHANGED_ASCENDING = 21
+EVERYTHING_SORT_DATE_RECENTLY_CHANGED_DESCENDING = 22
+EVERYTHING_SORT_DATE_ACCESSED_ASCENDING = 23
+EVERYTHING_SORT_DATE_ACCESSED_DESCENDING = 24
+EVERYTHING_SORT_DATE_RUN_ASCENDING = 25
+EVERYTHING_SORT_DATE_RUN_DESCENDING = 26
 
 # Windows time conversion constants
 WINDOWS_TICKS = int(1/10**-7)
@@ -23,8 +72,16 @@ WINDOWS_TICKS_TO_POSIX_EPOCH = EPOCH_DIFF * WINDOWS_TICKS
 class SearchResult(BaseModel):
     """Model for search results."""
     path: str
+    filename: str
+    extension: str | None = None
     size: int
-    modified: str
+    created: str | None = None
+    modified: str | None = None
+    accessed: str | None = None
+    attributes: int | None = None
+    run_count: int | None = None
+    highlighted_filename: str | None = None
+    highlighted_path: str | None = None
 
 class EverythingSDK:
     """Wrapper for Everything SDK functionality."""
@@ -36,33 +93,90 @@ class EverythingSDK:
 
     def _configure_dll(self):
         """Configure DLL function signatures."""
+        # Search configuration
+        self.dll.Everything_SetSearchW.argtypes = [ctypes.c_wchar_p]
+        self.dll.Everything_SetMatchPath.argtypes = [ctypes.c_bool]
+        self.dll.Everything_SetMatchCase.argtypes = [ctypes.c_bool]
+        self.dll.Everything_SetMatchWholeWord.argtypes = [ctypes.c_bool]
+        self.dll.Everything_SetRegex.argtypes = [ctypes.c_bool]
+        self.dll.Everything_SetMax.argtypes = [ctypes.c_uint]
+        self.dll.Everything_SetSort.argtypes = [ctypes.c_uint]
+        self.dll.Everything_SetRequestFlags.argtypes = [ctypes.c_uint]
+
+        # Result getters
+        self.dll.Everything_GetResultFileNameW.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultFileNameW.restype = ctypes.c_wchar_p
+        self.dll.Everything_GetResultExtensionW.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultExtensionW.restype = ctypes.c_wchar_p
+        self.dll.Everything_GetResultPathW.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultPathW.restype = ctypes.c_wchar_p
+        
+        self.dll.Everything_GetResultDateCreated.argtypes = [
+            ctypes.c_uint, 
+            ctypes.POINTER(ctypes.c_ulonglong)
+        ]
         self.dll.Everything_GetResultDateModified.argtypes = [
-            ctypes.c_int, 
+            ctypes.c_uint, 
+            ctypes.POINTER(ctypes.c_ulonglong)
+        ]
+        self.dll.Everything_GetResultDateAccessed.argtypes = [
+            ctypes.c_uint, 
             ctypes.POINTER(ctypes.c_ulonglong)
         ]
         self.dll.Everything_GetResultSize.argtypes = [
-            ctypes.c_int, 
+            ctypes.c_uint, 
             ctypes.POINTER(ctypes.c_ulonglong)
         ]
-        self.dll.Everything_GetResultFileNameW.argtypes = [ctypes.c_int]
-        self.dll.Everything_GetResultFileNameW.restype = ctypes.c_wchar_p
+        self.dll.Everything_GetResultAttributes.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultRunCount.argtypes = [ctypes.c_uint]
+        
+        self.dll.Everything_GetResultHighlightedFileNameW.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultHighlightedFileNameW.restype = ctypes.c_wchar_p
+        self.dll.Everything_GetResultHighlightedPathW.argtypes = [ctypes.c_uint]
+        self.dll.Everything_GetResultHighlightedPathW.restype = ctypes.c_wchar_p
 
-    def _get_time(self, filetime: bytes) -> datetime.datetime:
+    def _get_time(self, filetime: int) -> datetime.datetime:
         """Convert Windows filetime to Python datetime."""
-        winticks = struct.unpack('<Q', filetime)[0]
-        microsecs = (winticks - WINDOWS_TICKS_TO_POSIX_EPOCH) / WINDOWS_TICKS
+        microsecs = (filetime - WINDOWS_TICKS_TO_POSIX_EPOCH) / WINDOWS_TICKS
         return datetime.datetime.fromtimestamp(microsecs)
 
-    def search_files(self, query: str, max_results: int = 100) -> List[SearchResult]:
+    def search_files(
+        self, 
+        query: str, 
+        max_results: int = 100,
+        match_path: bool = False,
+        match_case: bool = False,
+        match_whole_word: bool = False,
+        match_regex: bool = False,
+        sort_by: int = EVERYTHING_SORT_NAME_ASCENDING,
+        request_flags: int | None = None
+    ) -> List[SearchResult]:
         """Perform file search using Everything SDK."""
         # Set up search parameters
         self.dll.Everything_SetSearchW(query)
-        self.dll.Everything_SetRequestFlags(
-            EVERYTHING_REQUEST_FILE_NAME | 
-            EVERYTHING_REQUEST_PATH | 
-            EVERYTHING_REQUEST_SIZE | 
-            EVERYTHING_REQUEST_DATE_MODIFIED
-        )
+        self.dll.Everything_SetMatchPath(match_path)
+        self.dll.Everything_SetMatchCase(match_case)
+        self.dll.Everything_SetMatchWholeWord(match_whole_word)
+        self.dll.Everything_SetRegex(match_regex)
+        self.dll.Everything_SetMax(max_results)
+        self.dll.Everything_SetSort(sort_by)
+
+        # Set request flags
+        if request_flags is None:
+            request_flags = (
+                EVERYTHING_REQUEST_FILE_NAME |
+                EVERYTHING_REQUEST_PATH |
+                EVERYTHING_REQUEST_EXTENSION |
+                EVERYTHING_REQUEST_SIZE |
+                EVERYTHING_REQUEST_DATE_CREATED |
+                EVERYTHING_REQUEST_DATE_MODIFIED |
+                EVERYTHING_REQUEST_DATE_ACCESSED |
+                EVERYTHING_REQUEST_ATTRIBUTES |
+                EVERYTHING_REQUEST_RUN_COUNT |
+                EVERYTHING_REQUEST_HIGHLIGHTED_FILE_NAME |
+                EVERYTHING_REQUEST_HIGHLIGHTED_PATH
+            )
+        self.dll.Everything_SetRequestFlags(request_flags)
 
         # Execute search
         self.dll.Everything_QueryW(True)
@@ -72,18 +186,40 @@ class EverythingSDK:
         results = []
 
         filename_buffer = ctypes.create_unicode_buffer(260)
-        date_modified = ctypes.c_ulonglong(1)
-        file_size = ctypes.c_ulonglong(1)
+        date_created = ctypes.c_ulonglong()
+        date_modified = ctypes.c_ulonglong()
+        date_accessed = ctypes.c_ulonglong()
+        file_size = ctypes.c_ulonglong()
 
         for i in range(num_results):
             self.dll.Everything_GetResultFullPathNameW(i, filename_buffer, 260)
+            
+            # Get timestamps
+            self.dll.Everything_GetResultDateCreated(i, date_created)
             self.dll.Everything_GetResultDateModified(i, date_modified)
+            self.dll.Everything_GetResultDateAccessed(i, date_accessed)
             self.dll.Everything_GetResultSize(i, file_size)
 
+            # Get other attributes
+            filename = self.dll.Everything_GetResultFileNameW(i)
+            extension = self.dll.Everything_GetResultExtensionW(i)
+            attributes = self.dll.Everything_GetResultAttributes(i)
+            run_count = self.dll.Everything_GetResultRunCount(i)
+            highlighted_filename = self.dll.Everything_GetResultHighlightedFileNameW(i)
+            highlighted_path = self.dll.Everything_GetResultHighlightedPathW(i)
+
             results.append(SearchResult(
-                path=ctypes.wstring_at(filename_buffer),
+                path=filename_buffer.value,
+                filename=filename,
+                extension=extension,
                 size=file_size.value,
-                modified=self._get_time(date_modified).isoformat()
+                created=self._get_time(date_created.value).isoformat() if date_created.value else None,
+                modified=self._get_time(date_modified.value).isoformat() if date_modified.value else None,
+                accessed=self._get_time(date_accessed.value).isoformat() if date_accessed.value else None,
+                attributes=attributes,
+                run_count=run_count,
+                highlighted_filename=highlighted_filename,
+                highlighted_path=highlighted_path
             ))
 
-        return results 
+        return results
