@@ -115,7 +115,12 @@ async def serve() -> None:
 
         try:
             query = arguments["query"]
-            max_results = min(arguments.get("max_results", 100), 1000)
+            
+            try:
+                max_results_raw = arguments.get("max_results", 100)
+                max_results = min(int(max_results_raw), 1000)
+            except ValueError:
+                max_results = 100
 
             results = search_files(everything_dll, query, max_results)
             
