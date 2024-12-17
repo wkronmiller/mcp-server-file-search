@@ -16,24 +16,27 @@ Parameters:
 - `match_whole_word` (optional): Match whole words only (default: false)
 - `match_regex` (optional): Enable regex search (default: false)
 - `sort_by` (optional): Sort order for results (default: 1). Available options:
-  - 1 (NAME_ASC): Sort by filename (A to Z)
-  - 2 (NAME_DESC): Sort by filename (Z to A)
-  - 3 (PATH_ASC): Sort by path (A to Z)
-  - 4 (PATH_DESC): Sort by path (Z to A)
-  - 5 (SIZE_ASC): Sort by size (smallest first)
-  - 6 (SIZE_DESC): Sort by size (largest first)
-  - 7 (EXT_ASC): Sort by extension (A to Z)
-  - 8 (EXT_DESC): Sort by extension (Z to A)
-  - 11 (CREATED_ASC): Sort by creation date (oldest first)
-  - 12 (CREATED_DESC): Sort by creation date (newest first)
-  - 13 (MODIFIED_ASC): Sort by modification date (oldest first)
-  - 14 (MODIFIED_DESC): Sort by modification date (newest first)
+```
+  - 1: Sort by filename (A to Z)
+  - 2: Sort by filename (Z to A)
+  - 3: Sort by path (A to Z)
+  - 4: Sort by path (Z to A)
+  - 5: Sort by size (smallest first)
+  - 6: Sort by size (largest first)
+  - 7: Sort by extension (A to Z)
+  - 8: Sort by extension (Z to A)
+  - 11: Sort by creation date (oldest first)
+  - 12: Sort by creation date (newest first)
+  - 13: Sort by modification date (oldest first)
+  - 14: Sort by modification date (newest first)
+```
 
 Examples:
 ```json
 {
   "query": "*.py",
-  "max_results": 50
+  "max_results": 50,
+  "sort_by": 6
 }
 ```
 
@@ -49,8 +52,9 @@ Response includes:
 - File size in bytes
 - Last modified date
 
+### Search Syntax Guide
 <details>
-<summary>Search Syntax Guide</summary>
+<summary>Advanced Search Queries</summary>
 
 ### Basic Operators
 - `space`: AND operator
