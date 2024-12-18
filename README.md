@@ -1,6 +1,6 @@
 # Everything Search MCP Server
 
-An MCP server that provides fast file searching capabilities using the Everything SDK.
+An MCP server that provides fast file searching capabilities using the [Everything](https://www.voidtools.com/) SDK.
 
 ## Tools
 
