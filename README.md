@@ -1,21 +1,27 @@
 # Everything Search MCP Server
 
-An MCP server that provides fast file searching capabilities using the [Everything](https://www.voidtools.com/) SDK.
+An MCP server that provides fast file searching capabilities across Windows, macOS, and Linux. On Windows, it uses the [Everything](https://www.voidtools.com/) SDK. On macOS, it uses the built-in `mdfind` command. On Linux, it uses the `locate`/`plocate` command.
 
 ## Tools
 
 ### search
 
-Search for files and folders using Everything SDK.
+Search for files and folders across your system. The search capabilities and syntax support vary by platform:
+
+- Windows: Full Everything SDK features (see syntax guide below)
+- macOS: Basic filename and content search using Spotlight database
+- Linux: Basic filename search using locate database
 
 Parameters:
-- `query` (required): Search query string. Supports wildcards (* and ?) and more. See the search syntax guide for more details.
+
+- `query` (required): Search query string. See platform-specific notes below.
 - `max_results` (optional): Maximum number of results to return (default: 100, max: 1000)
 - `match_path` (optional): Match against full path instead of filename only (default: false)
 - `match_case` (optional): Enable case-sensitive search (default: false)
 - `match_whole_word` (optional): Match whole words only (default: false)
 - `match_regex` (optional): Enable regex search (default: false)
 - `sort_by` (optional): Sort order for results (default: 1). Available options:
+
 ```
   - 1: Sort by filename (A to Z)
   - 2: Sort by filename (Z to A)
@@ -32,6 +38,7 @@ Parameters:
 ```
 
 Examples:
+
 ```json
 {
   "query": "*.py",
@@ -48,119 +55,45 @@ Examples:
 ```
 
 Response includes:
+
 - File/folder path
 - File size in bytes
 - Last modified date
 
 ### Search Syntax Guide
-<details>
-<summary>Advanced Search Queries</summary>
 
-### Basic Operators
-- `space`: AND operator
-- `|`: OR operator
-- `!`: NOT operator
-- `< >`: Grouping
-- `" "`: Search for an exact phrase
-
-### Wildcards
-- `*`: Matches zero or more characters
-- `?`: Matches exactly one character
-
-Note: Wildcards match the whole filename by default. Disable Match whole filename to match wildcards anywhere.
-
-### Functions
-
-#### Size and Count
-- `size:<size>[kb|mb|gb]`: Search by file size
-- `count:<max>`: Limit number of results
-- `childcount:<count>`: Folders with specific number of children
-- `childfilecount:<count>`: Folders with specific number of files
-- `childfoldercount:<count>`: Folders with specific number of subfolders
-- `len:<length>`: Match filename length
-
-#### Dates
-- `datemodified:<date>, dm:<date>`: Modified date
-- `dateaccessed:<date>, da:<date>`: Access date
-- `datecreated:<date>, dc:<date>`: Creation date
-- `daterun:<date>, dr:<date>`: Last run date
-- `recentchange:<date>, rc:<date>`: Recently changed date
-
-Date formats: YYYY[-MM[-DD[Thh[:mm[:ss[.sss]]]]]] or today, yesterday, lastweek, etc.
-
-#### File Attributes and Types
-- `attrib:<attributes>, attributes:<attributes>`: Search by file attributes (A:Archive, H:Hidden, S:System, etc.)
-- `type:<type>`: Search by file type
-- `ext:<list>`: Search by semicolon-separated extensions
-
-#### Path and Name
-- `path:<path>`: Search in specific path
-- `parent:<path>, infolder:<path>, nosubfolders:<path>`: Search in path excluding subfolders
-- `startwith:<text>`: Files starting with text
-- `endwith:<text>`: Files ending with text
-- `child:<filename>`: Folders containing specific child
-- `depth:<count>, parents:<count>`: Files at specific folder depth
-- `root`: Files with no parent folder
-- `shell:<name>`: Search in known shell folders
-
-#### Duplicates and Lists
-- `dupe, namepartdupe, attribdupe, dadupe, dcdupe, dmdupe, sizedupe`: Find duplicates
-- `filelist:<list>`: Search pipe-separated (|) file list
-- `filelistfilename:<filename>`: Search files from list file
-- `frn:<frnlist>`: Search by File Reference Numbers
-- `fsi:<index>`: Search by file system index
-- `empty`: Find empty folders
-
-### Function Syntax
-
-- `function:value`: Equal to value
-- `function:<=value`: Less than or equal
-- `function:<value`: Less than
-- `function:=value`: Equal to
-- `function:>value`: Greater than
-- `function:>=value`: Greater than or equal
-- `function:start..end`: Range of values
-- `function:start-end`: Range of values
-
-### Modifiers
-
-- `case:, nocase:: Enable/disable case sensitivity
-- `file:, folder:: Match only files or folders
-- `path:, nopath:: Match full path or filename only
-- `regex:, noregex:: Enable/disable regex
-- `wfn:, nowfn:: Match whole filename or anywhere
-- `wholeword:, ww:: Match whole words only
-- `wildcards:, nowildcards:: Enable/disable wildcards
-
-### Examples
-
-1. Find Python files modified today:
-   `ext:py datemodified:today`
-
-2. Find large video files:
-   `ext:mp4|mkv|avi size:>1gb`
-
-3. Find files in specific folder:
-   `path:C:\Projects *.js`
-
-</details>
+For detailed information about the search syntax supported on each platform (Windows, macOS, and Linux), please see [SEARCH_SYNTAX.md](SEARCH_SYNTAX.md).
 
 ## Prerequisites
 
-1. Windows operating system (required - this server only works on Windows)
-2. [Everything](https://www.voidtools.com/) search utility:
+### Windows
+
+1. [Everything](https://www.voidtools.com/) search utility:
    - Download and install from https://www.voidtools.com/
    - **Make sure the Everything service is running**
-3. Everything SDK:
+2. Everything SDK:
    - Download from https://www.voidtools.com/support/everything/sdk/
    - Extract the SDK files to a location on your system
+
+### Linux
+
+1. Install and initialize the `locate` or `plocate` command:
+   - Ubuntu/Debian: `sudo apt-get install plocate` or `sudo apt-get install mlocate`
+   - Fedora: `sudo dnf install mlocate`
+2. After installation, update the database:
+   - For plocate: `sudo updatedb`
+   - For mlocate: `sudo /etc/cron.daily/mlocate`
+
+### macOS
+
+No additional setup required. The server uses the built-in `mdfind` command.
 
 ## Installation
 
 ### Using uv (recommended)
 
 When using [`uv`](https://docs.astral.sh/uv/) no specific installation is needed. We will
-use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-server-everything-search*.
+use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run _mcp-server-everything-search_.
 
 ### Using PIP
 
@@ -178,19 +111,26 @@ python -m mcp_server_everything_search
 
 ## Configuration
 
+### Windows
+
 The server requires the Everything SDK DLL to be available:
 
 Environment variable:
-   ```
-   EVERYTHING_SDK_PATH=path\to\Everything-SDK\dll\Everything64.dll
-   ```
+
+```
+EVERYTHING_SDK_PATH=path\to\Everything-SDK\dll\Everything64.dll
+```
+
+### Linux and macOS
+
+No additional configuration required.
 
 ### Usage with Claude Desktop
 
-Add this to your `claude_desktop_config.json`:
+Add one of these configurations to your `claude_desktop_config.json` based on your platform:
 
 <details>
-<summary>Using uvx</summary>
+<summary>Windows (using uvx)</summary>
 
 ```json
 "mcpServers": {
@@ -203,10 +143,11 @@ Add this to your `claude_desktop_config.json`:
   }
 }
 ```
+
 </details>
 
 <details>
-<summary>Using pip installation</summary>
+<summary>Windows (using pip installation)</summary>
 
 ```json
 "mcpServers": {
@@ -219,6 +160,32 @@ Add this to your `claude_desktop_config.json`:
   }
 }
 ```
+
+</details>
+
+<details>
+<summary>Linux and macOS</summary>
+
+```json
+"mcpServers": {
+  "everything-search": {
+    "command": "uvx",
+    "args": ["mcp-server-everything-search"]
+  }
+}
+```
+
+Or if using pip installation:
+
+```json
+"mcpServers": {
+  "everything-search": {
+    "command": "python",
+    "args": ["-m", "mcp_server_everything_search"]
+  }
+}
+```
+
 </details>
 
 ## Debugging
@@ -237,7 +204,19 @@ cd mcp-everything-search/src/mcp_server_everything_search
 npx @modelcontextprotocol/inspector uv run mcp-server-everything-search
 ```
 
-Using PowerShell, running `Get-Content -Path "$env:APPDATA\Claude\logs\mcp*.log" -Tail 20 -Wait` will show the logs from the server and may help you debug any issues.
+To view server logs:
+
+Linux/macOS:
+
+```bash
+tail -f ~/.config/Claude/logs/mcp*.log
+```
+
+Windows (PowerShell):
+
+```powershell
+Get-Content -Path "$env:APPDATA\Claude\logs\mcp*.log" -Tail 20 -Wait
+```
 
 ## Development
 
