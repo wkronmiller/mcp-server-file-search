@@ -1,8 +1,11 @@
-# Everything Search MCP Server
+# File Search MCP Server
 
-[![smithery badge](https://smithery.ai/badge/mcp-server-everything-search)](https://smithery.ai/server/mcp-server-everything-search)
+## Fork Notice
 
-An MCP server that provides fast file searching capabilities across Windows, macOS, and Linux. On Windows, it uses the [Everything](https://www.voidtools.com/) SDK. On macOS, it uses the built-in `mdfind` command. On Linux, it uses the `locate`/`plocate` command.
+This repository is now maintained at https://github.com/wkronmiller/mcp-server-file-search.
+If you’re reading this elsewhere, please use that URL for issues and pull requests.
+
+An MCP server that provides fast file searching capabilities across macOS and Linux. On macOS, it uses the built-in `mdfind` command. On Linux, it uses the `locate`/`plocate` command.
 
 ## Tools
 
@@ -10,7 +13,6 @@ An MCP server that provides fast file searching capabilities across Windows, mac
 
 Search for files and folders across your system. The search capabilities and syntax support vary by platform:
 
-- Windows: Full Everything SDK features (see syntax guide below)
 - macOS: Basic filename and content search using Spotlight database
 - Linux: Basic filename search using locate database
 
@@ -68,15 +70,6 @@ For detailed information about the search syntax supported on each platform (Win
 
 ## Prerequisites
 
-### Windows
-
-1. [Everything](https://www.voidtools.com/) search utility:
-   - Download and install from https://www.voidtools.com/
-   - **Make sure the Everything service is running**
-2. Everything SDK:
-   - Download from https://www.voidtools.com/support/everything/sdk/
-   - Extract the SDK files to a location on your system
-
 ### Linux
 
 1. Install and initialize the `locate` or `plocate` command:
@@ -119,85 +112,6 @@ After installation, you can run it as a script using:
 python -m mcp_server_everything_search
 ```
 
-## Configuration
-
-### Windows
-
-The server requires the Everything SDK DLL to be available:
-
-Environment variable:
-
-```
-EVERYTHING_SDK_PATH=path\to\Everything-SDK\dll\Everything64.dll
-```
-
-### Linux and macOS
-
-No additional configuration required.
-
-### Usage with Claude Desktop
-
-Add one of these configurations to your `claude_desktop_config.json` based on your platform:
-
-<details>
-<summary>Windows (using uvx)</summary>
-
-```json
-"mcpServers": {
-  "everything-search": {
-    "command": "uvx",
-    "args": ["mcp-server-everything-search"],
-    "env": {
-      "EVERYTHING_SDK_PATH": "path/to/Everything-SDK/dll/Everything64.dll"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Windows (using pip installation)</summary>
-
-```json
-"mcpServers": {
-  "everything-search": {
-    "command": "python",
-    "args": ["-m", "mcp_server_everything_search"],
-    "env": {
-      "EVERYTHING_SDK_PATH": "path/to/Everything-SDK/dll/Everything64.dll"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary>Linux and macOS</summary>
-
-```json
-"mcpServers": {
-  "everything-search": {
-    "command": "uvx",
-    "args": ["mcp-server-everything-search"]
-  }
-}
-```
-
-Or if using pip installation:
-
-```json
-"mcpServers": {
-  "everything-search": {
-    "command": "python",
-    "args": ["-m", "mcp_server_everything_search"]
-  }
-}
-```
-
-</details>
-
 ## Debugging
 
 You can use the MCP inspector to debug the server. For uvx installations:
@@ -209,8 +123,8 @@ npx @modelcontextprotocol/inspector uvx mcp-server-everything-search
 Or if you've installed the package in a specific directory or are developing on it:
 
 ```
-git clone https://github.com/mamertofabian/mcp-everything-search.git
-cd mcp-everything-search/src/mcp_server_everything_search
+git clone https://github.com/wkronmiller/mcp-server-file-search.git
+cd mcp-server-file-search
 npx @modelcontextprotocol/inspector uv run mcp-server-everything-search
 ```
 
@@ -220,12 +134,6 @@ Linux/macOS:
 
 ```bash
 tail -f ~/.config/Claude/logs/mcp*.log
-```
-
-Windows (PowerShell):
-
-```powershell
-Get-Content -Path "$env:APPDATA\Claude\logs\mcp*.log" -Tail 20 -Wait
 ```
 
 ## Development
