@@ -3,7 +3,7 @@
 Repository: https://github.com/wkronmiller/mcp-server-file-search (active fork)
 
 ## Project Structure & Module Organization
-- Source: `src/mcp_server_everything_search/` (entry: `__main__.py`, server: `server.py`, platform adapters: `search_interface.py`, `platform_search.py`, Windows SDK: `everything_sdk.py`).
+- Source: `src/mcp_server_everything_search/` (entry: `__main__.py`, server: `server.py`, platform adapters: `search_interface.py`, `platform_search.py`).
 - Package name: `mcp_server_everything_search`; script entry point: `mcp-server-everything-search`.
 - Docs: `README.md`, `SEARCH_SYNTAX.md`.
 - Build config: `pyproject.toml`; lockfile: `uv.lock`.
@@ -37,7 +37,6 @@ Repository: https://github.com/wkronmiller/mcp-server-file-search (active fork)
   - Update `README.md`/`SEARCH_SYNTAX.md` if behavior or flags change.
 
 ## Security & Configuration Tips
-- Windows: set `EVERYTHING_SDK_PATH` to the Everything SDK DLL before running.
 - Linux: ensure `plocate`/`locate` database is initialized (`sudo updatedb`).
 - macOS: relies on Spotlight (`mdfind`). No extra config.
 - Avoid checking in secrets; prefer env vars in local dev only.

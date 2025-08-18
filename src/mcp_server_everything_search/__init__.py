@@ -1,4 +1,4 @@
-"""Everything Search MCP Server."""
+"""File Search MCP Server for macOS and Linux."""
 
 from .server import main
 

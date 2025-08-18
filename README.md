@@ -66,7 +66,7 @@ Response includes:
 
 ### Search Syntax Guide
 
-For detailed information about the search syntax supported on each platform (Windows, macOS, and Linux), please see [SEARCH_SYNTAX.md](SEARCH_SYNTAX.md).
+For detailed information about the search syntax supported on macOS and Linux, please see [SEARCH_SYNTAX.md](SEARCH_SYNTAX.md).
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ No additional setup required. The server uses the built-in `mdfind` command.
 
 ### Installing via Smithery
 
-To install Everything Search for Claude Desktop automatically via [Smithery](https://smithery.ai/server/mcp-server-everything-search):
+To install the File Search MCP server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/mcp-server-everything-search):
 
 ```bash
 npx -y @smithery/cli install mcp-server-everything-search --client claude
@@ -145,17 +145,14 @@ If you are doing local development, there are two ways to test your changes:
 2. Test using the Claude desktop app. Add the following to your `claude_desktop_config.json`:
 
 ```json
-"everything-search": {
+"file-search": {
   "command": "uv",
   "args": [
     "--directory",
-    "/path/to/mcp-everything-search/src/mcp_server_everything_search",
+    "/path/to/mcp-server-file-search",
     "run",
     "mcp-server-everything-search"
-  ],
-  "env": {
-    "EVERYTHING_SDK_PATH": "path/to/Everything-SDK/dll/Everything64.dll"
-  }
+  ]
 }
 ```
 
@@ -165,4 +162,4 @@ This MCP server is licensed under the MIT License. This means you are free to us
 
 ## Disclaimer
 
-This project is not affiliated with, endorsed by, or sponsored by voidtools (the creators of Everything search utility). This is an independent project that utilizes the publicly available Everything SDK.
+This project is not affiliated with Apple or any Linux distribution. It uses macOS Spotlight (`mdfind`) and Linux `locate`/`plocate` utilities available on those platforms.

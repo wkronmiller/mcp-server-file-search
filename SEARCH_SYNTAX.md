@@ -1,103 +1,5 @@
 # Search Syntax Guide
 
-## Windows Search (Everything SDK)
-
-The following advanced search features are only available on Windows when using the Everything SDK:
-
-### Basic Operators
-
-- `space`: AND operator
-- `|`: OR operator
-- `!`: NOT operator
-- `< >`: Grouping
-- `" "`: Search for an exact phrase
-
-### Wildcards
-
-- `*`: Matches zero or more characters
-- `?`: Matches exactly one character
-
-Note: Wildcards match the whole filename by default. Disable Match whole filename to match wildcards anywhere.
-
-### Functions
-
-#### Size and Count
-
-- `size:<size>[kb|mb|gb]`: Search by file size
-- `count:<max>`: Limit number of results
-- `childcount:<count>`: Folders with specific number of children
-- `childfilecount:<count>`: Folders with specific number of files
-- `childfoldercount:<count>`: Folders with specific number of subfolders
-- `len:<length>`: Match filename length
-
-#### Dates
-
-- `datemodified:<date>, dm:<date>`: Modified date
-- `dateaccessed:<date>, da:<date>`: Access date
-- `datecreated:<date>, dc:<date>`: Creation date
-- `daterun:<date>, dr:<date>`: Last run date
-- `recentchange:<date>, rc:<date>`: Recently changed date
-
-Date formats: YYYY[-MM[-DD[Thh[:mm[:ss[.sss]]]]]] or today, yesterday, lastweek, etc.
-
-#### File Attributes and Types
-
-- `attrib:<attributes>, attributes:<attributes>`: Search by file attributes (A:Archive, H:Hidden, S:System, etc.)
-- `type:<type>`: Search by file type
-- `ext:<list>`: Search by semicolon-separated extensions
-
-#### Path and Name
-
-- `path:<path>`: Search in specific path
-- `parent:<path>, infolder:<path>, nosubfolders:<path>`: Search in path excluding subfolders
-- `startwith:<text>`: Files starting with text
-- `endwith:<text>`: Files ending with text
-- `child:<filename>`: Folders containing specific child
-- `depth:<count>, parents:<count>`: Files at specific folder depth
-- `root`: Files with no parent folder
-- `shell:<name>`: Search in known shell folders
-
-#### Duplicates and Lists
-
-- `dupe, namepartdupe, attribdupe, dadupe, dcdupe, dmdupe, sizedupe`: Find duplicates
-- `filelist:<list>`: Search pipe-separated (|) file list
-- `filelistfilename:<filename>`: Search files from list file
-- `frn:<frnlist>`: Search by File Reference Numbers
-- `fsi:<index>`: Search by file system index
-- `empty`: Find empty folders
-
-### Function Syntax
-
-- `function:value`: Equal to value
-- `function:<=value`: Less than or equal
-- `function:<value`: Less than
-- `function:=value`: Equal to
-- `function:>value`: Greater than
-- `function:>=value`: Greater than or equal
-- `function:start..end`: Range of values
-- `function:start-end`: Range of values
-
-### Modifiers
-
-- `case:, nocase:`: Enable/disable case sensitivity
-- `file:, folder:`: Match only files or folders
-- `path:, nopath:`: Match full path or filename only
-- `regex:, noregex:`: Enable/disable regex
-- `wfn:, nowfn:`: Match whole filename or anywhere
-- `wholeword:, ww:`: Match whole words only
-- `wildcards:, nowildcards:`: Enable/disable wildcards
-
-### Examples
-
-1. Find Python files modified today:
-   `ext:py datemodified:today`
-
-2. Find large video files:
-   `ext:mp4|mkv|avi size:>1gb`
-
-3. Find files in specific folder:
-   `path:C:\Projects *.js`
-
 ## macOS Search (mdfind)
 
 macOS uses Spotlight's metadata search capabilities through the `mdfind` command. The following features are supported:
@@ -260,3 +162,4 @@ Linux uses the locate/plocate command for fast filename searching. The following
    Use with `-c` parameter
 
 Note: The locate database must be up to date for accurate results. Run `sudo updatedb` to update the database manually.
+
