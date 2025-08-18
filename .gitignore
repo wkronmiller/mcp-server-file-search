@@ -33,3 +33,5 @@ htmlcov/
 
 .history
 .aider*
+.build
+Package.resolved
