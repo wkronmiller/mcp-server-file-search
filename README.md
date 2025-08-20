@@ -87,7 +87,7 @@ Content search with date filter and sorting:
 ```
 
 Notes:
-- Searches time out after ~10s; partial results may be returned.
+- Searches time out after ~10s by default (configurable via `timeoutSeconds`); partial results may be returned.
 - Results are Spotlight-based; files excluded from indexing will not appear.
 
 ## Client Configuration Examples
@@ -127,4 +127,3 @@ Common commands:
 
 ## License
 MIT. See `LICENSE`.
-

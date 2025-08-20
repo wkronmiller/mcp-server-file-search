@@ -76,6 +76,10 @@ public class FileSearchToolHandler {
                         "type": .string("number"),
                         "description": .string("Max results to return. Default: 200")
                     ]),
+                    "timeoutSeconds": .object([
+                        "type": .string("number"),
+                        "description": .string("Timeout in seconds before returning partial results. Default: 10")
+                    ]),
                     "filenameOnly": .object([
                         "type": .string("boolean"),
                         "description": .string("Legacy parameter. If true, sets queryType to 'filename'.")
@@ -167,6 +171,22 @@ public class FileSearchToolHandler {
             }
             Logger.debug("Limit parameter: \(limit?.description ?? "not specified")")
             
+            // Extract timeoutSeconds number if present
+            var timeoutSeconds: Double? = nil
+            if let timeoutValue = params.arguments?["timeoutSeconds"] {
+                switch timeoutValue {
+                case .double(let d):
+                    timeoutSeconds = d
+                case .int(let i):
+                    timeoutSeconds = Double(i)
+                case .string(let s):
+                    timeoutSeconds = Double(s)
+                default:
+                    break
+                }
+            }
+            Logger.debug("TimeoutSeconds parameter: \(timeoutSeconds?.description ?? "not specified")")
+            
             // Create SearchArgs with all new parameters
             let args = SearchArgs(
                 query: query,
@@ -177,7 +197,8 @@ public class FileSearchToolHandler {
                 sortBy: sortBy,
                 sortOrder: sortOrder,
                 limit: limit,
-                filenameOnly: filenameOnly
+                filenameOnly: filenameOnly,
+                timeoutSeconds: timeoutSeconds
             )
 
             Logger.info("Starting Spotlight search with query: '\(query)'")

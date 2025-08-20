@@ -113,12 +113,14 @@ private class MainActorSpotlightQuery {
             
             Logger.debug("Query started successfully")
             
-            // Set up timeout (10 seconds)
+            // Set up timeout (default 10 seconds, overridable via args.timeoutSeconds)
+            let timeoutSeconds = args.timeoutSeconds ?? 10.0
             Task {
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                let nanos = UInt64(max(0, timeoutSeconds) * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: nanos)
                 
                 guard !hasResumed else { return }
-                Logger.warning("Query timed out after 10 seconds, returning partial results")
+                Logger.warning("Query timed out after \(timeoutSeconds) seconds, returning partial results")
                 Logger.warning("Partial result count: \(query.resultCount)")
                 
                 let results = Self.extractResults(from: query, limit: limit)

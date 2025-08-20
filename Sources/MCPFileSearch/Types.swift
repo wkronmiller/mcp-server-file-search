@@ -60,6 +60,8 @@ public struct SearchArgs: Codable, Sendable {
     let limit: Int?
     /// Legacy parameter for backward compatibility - sets queryType to .filename
     let filenameOnly: Bool?
+    /// Timeout in seconds for the Spotlight query (default: 10 seconds if not provided)
+    let timeoutSeconds: Double?
     
     public init(query: String,
                 queryType: QueryType? = nil,
@@ -69,7 +71,8 @@ public struct SearchArgs: Codable, Sendable {
                 sortBy: SortOption? = nil,
                 sortOrder: SortOrder? = nil,
                 limit: Int? = nil,
-                filenameOnly: Bool? = nil) {
+                filenameOnly: Bool? = nil,
+                timeoutSeconds: Double? = nil) {
         self.query = query
         self.extensions = extensions
         self.onlyIn = onlyIn
@@ -78,6 +81,7 @@ public struct SearchArgs: Codable, Sendable {
         self.sortOrder = sortOrder
         self.limit = limit
         self.filenameOnly = filenameOnly
+        self.timeoutSeconds = timeoutSeconds
         
         // Handle backward compatibility
         if let filenameOnly = filenameOnly, filenameOnly {
