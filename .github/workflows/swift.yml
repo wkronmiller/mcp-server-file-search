@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest # Or macos-latest if needed
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
