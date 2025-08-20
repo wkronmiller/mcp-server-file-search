@@ -23,7 +23,7 @@ let package = Package(
             dependencies: [
                 "MCPFileSearch",
                 .product(name: "MCP", package: "swift-sdk")
-            ],
+            ]
 
         )
     ]
