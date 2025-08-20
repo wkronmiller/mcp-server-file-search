@@ -35,3 +35,4 @@ htmlcov/
 .aider*
 .build
 Package.resolved
+claude_desktop_config.json

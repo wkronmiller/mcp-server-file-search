@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
@@ -12,10 +12,19 @@ let package = Package(
         .executableTarget(
             name: "MCPFileSearch",
             dependencies: [ .product(name: "MCP", package: "swift-sdk") ],
+
             linkerSettings: [
                 .linkedFramework("CoreServices"),
                 .linkedFramework("Foundation")
             ]
+        ),
+        .testTarget(
+            name: "MCPFileSearchTests",
+            dependencies: [
+                "MCPFileSearch",
+                .product(name: "MCP", package: "swift-sdk")
+            ],
+
         )
     ]
 )
