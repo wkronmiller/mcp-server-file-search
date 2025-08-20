@@ -7,16 +7,16 @@ final class MCPFileSearchTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        print("🧪 Starting test: \(name)")
+        print("Starting test: \(name)")
     }
     
     override func tearDown() {
-        print("✅ Completed test: \(name)")
+        print("Completed test: \(name)")
         super.tearDown()
     }
     
     func testServerConnection() async throws {
-        print("🔧 Creating client and server...")
+        print("Creating client and server...")
         let client = Client(name: "TestClient", version: "1.0.0")
         let server = MCPFileSearchServer.createServer()
         
@@ -26,34 +26,34 @@ final class MCPFileSearchTests: XCTestCase {
         print("🔗 Creating transport pair...")
         let (clientTransport, serverTransport) = await InMemoryTransport.createConnectedPair()
         
-        print("🚀 Starting server and connecting client...")
+        print("Starting server and connecting client...")
         async let _ = server.start(transport: serverTransport)
         
-        print("📡 Connecting client...")
+        print("Connecting client...")
         let result = try await client.connect(transport: clientTransport)
-        print("✅ Client connected successfully")
+        print("Client connected successfully")
         
-        print("🔍 Verifying server capabilities...")
+        print("Verifying server capabilities...")
         XCTAssertNotNil(result.capabilities.tools, "Server should advertise tools capability")
         XCTAssertEqual(result.serverInfo.name, "mac-file-search")
         XCTAssertEqual(result.serverInfo.version, "0.1.0")
-        print("✅ Server capabilities verified")
+        print("Server capabilities verified")
         
         print("🧹 Cleaning up...")
         await client.disconnect()
         await server.stop()
-        print("✅ Cleanup completed")
+        print("Cleanup completed")
     }
     
     func testListTools() async throws {
-        print("🛠️ Testing tool listing...")
+        print("Testing tool listing...")
         
         // Create and configure client/server
         let (client, server) = try await setupClientServer()
         
-        print("📋 Listing tools...")
+        print("Listing tools...")
         let (tools, _) = try await client.listTools()
-        print("📋 Got \(tools.count) tools")
+        print("Got \(tools.count) tools")
         
         // Verify tools
         XCTAssertEqual(tools.count, 1, "Should have exactly one tool")
@@ -62,14 +62,14 @@ final class MCPFileSearchTests: XCTestCase {
         XCTAssertEqual(fileSearchTool.name, "file-search")
         XCTAssertEqual(fileSearchTool.description, "Advanced Spotlight-backed file search on macOS with multiple query types, date filtering, and sorting.")
         XCTAssertNotNil(fileSearchTool.inputSchema)
-        print("✅ Tool verification passed")
+        print("Tool verification passed")
         
         // Clean up
         await cleanup(client: client, server: server)
     }
     
     func testFileSearchBasic() async throws {
-        print("🔍 Testing basic file-search functionality...")
+        print("Testing basic file-search functionality...")
         
         // Create and configure client/server
         let (client, server) = try await setupClientServer()
@@ -85,11 +85,11 @@ final class MCPFileSearchTests: XCTestCase {
         )
         
         // Verify response structure (even if no results found)
-        print("🔍 isError: \(isError ?? false)")
+        print("isError: \(isError ?? false)")
         XCTAssertEqual(content.count, 1, "Should return one content item")
         
         if case .text(let jsonResponse) = content.first! {
-            print("📄 Got JSON response: \(jsonResponse)")
+            print("Got JSON response: \(jsonResponse)")
             
             // Parse JSON response - should be valid even if empty
             let data = jsonResponse.data(using: String.Encoding.utf8)!
@@ -104,7 +104,7 @@ final class MCPFileSearchTests: XCTestCase {
                 let firstResult = searchResults.first!
                 XCTAssertFalse(firstResult.path.isEmpty, "Path should not be empty")
                 XCTAssertFalse(firstResult.name.isEmpty, "Name should not be empty")
-                print("✅ First result: \(firstResult.name) at \(firstResult.path)")
+                print("First result: \(firstResult.name) at \(firstResult.path)")
             } else {
                 print("ℹ️ No results found - this may be expected in test environment")
             }
@@ -117,14 +117,14 @@ final class MCPFileSearchTests: XCTestCase {
     }
     
     func testFileSearchWithDirectory() async throws {
-        print("📁 Testing directory-scoped search for multiple files...")
+        print("Testing directory-scoped search for multiple files...")
         
         // Create and configure client/server
         let (client, server) = try await setupClientServer()
         
         // Get current directory for testing
         let currentDir = FileManager.default.currentDirectoryPath
-        print("📁 Searching in directory: \(currentDir)")
+        print("Searching in directory: \(currentDir)")
         
         // Search for Swift files in the project (should find main.swift, etc.)
         let (content, isError) = try await client.callTool(
@@ -142,7 +142,7 @@ final class MCPFileSearchTests: XCTestCase {
         XCTAssertEqual(content.count, 1, "Should return one content item")
         
         if case .text(let jsonResponse) = content.first! {
-            print("📄 Got JSON response: \(jsonResponse)")
+            print("Got JSON response: \(jsonResponse)")
             
             // Parse JSON response
             let data = jsonResponse.data(using: String.Encoding.utf8)!
@@ -157,7 +157,7 @@ final class MCPFileSearchTests: XCTestCase {
             for result in searchResults {
                 XCTAssertTrue(result.path.contains(currentDir), "All results should be in project directory")
                 XCTAssertTrue(result.name.hasSuffix(".swift"), "All results should be Swift files")
-                print("✅ Found Swift file: \(result.name) at \(result.path)")
+                print("Found Swift file: \(result.name) at \(result.path)")
             }
             
             // Should find some specific files we know exist
@@ -167,7 +167,7 @@ final class MCPFileSearchTests: XCTestCase {
             for knownFile in knownFiles {
                 let found = foundFiles.contains { $0.contains(knownFile) }
                 if found {
-                    print("✅ Found expected file: \(knownFile)")
+                    print("Found expected file: \(knownFile)")
                 }
             }
             
@@ -191,7 +191,7 @@ final class MCPFileSearchTests: XCTestCase {
         
         // Get current directory for scoped search
         let currentDir = FileManager.default.currentDirectoryPath
-        print("📁 Searching for LICENSE file in: \(currentDir)")
+        print("Searching for LICENSE file in: \(currentDir)")
         
         // Search for LICENSE file specifically
         let (content, isError) = try await client.callTool(
@@ -209,7 +209,7 @@ final class MCPFileSearchTests: XCTestCase {
         XCTAssertEqual(content.count, 1, "Should return one content item")
         
         if case .text(let jsonResponse) = content.first! {
-            print("📄 Got JSON response: \(jsonResponse)")
+            print("Got JSON response: \(jsonResponse)")
             
             // Parse JSON response
             let data = jsonResponse.data(using: String.Encoding.utf8)!
@@ -226,7 +226,7 @@ final class MCPFileSearchTests: XCTestCase {
             if let licenseFile = licenseFile {
                 XCTAssertTrue(licenseFile.path.contains(currentDir), "LICENSE should be in project directory")
                 XCTAssertTrue(licenseFile.path.hasSuffix("LICENSE"), "Path should end with LICENSE")
-                print("✅ Found LICENSE file at: \(licenseFile.path)")
+                print("Found LICENSE file at: \(licenseFile.path)")
             }
         } else {
             XCTFail("Expected text content")
@@ -253,11 +253,11 @@ final class MCPFileSearchTests: XCTestCase {
         )
         
         // Verify response - should not hang and should return valid JSON
-        print("🔍 isError: \(isError ?? false)")
+        print("isError: \(isError ?? false)")
         XCTAssertEqual(content.count, 1, "Should return one content item")
         
         if case .text(let jsonResponse) = content.first! {
-            print("📄 Got JSON response: \(jsonResponse)")
+            print("Got JSON response: \(jsonResponse)")
             
             // Should be valid JSON array (likely empty)
             let data = jsonResponse.data(using: String.Encoding.utf8)!
@@ -447,7 +447,7 @@ final class MCPFileSearchTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func setupClientServer() async throws -> (Client, Server) {
-        print("🔧 Setting up client/server pair...")
+        print("Setting up client/server pair...")
         let client = Client(name: "TestClient", version: "1.0.0")
         let server = MCPFileSearchServer.createServer()
         
@@ -457,10 +457,10 @@ final class MCPFileSearchTests: XCTestCase {
         print("🔗 Creating transport pair...")
         let (clientTransport, serverTransport) = await InMemoryTransport.createConnectedPair()
         
-        print("🚀 Starting server and connecting client...")
+        print("Starting server and connecting client...")
         async let _ = server.start(transport: serverTransport)
         _ = try await client.connect(transport: clientTransport)
-        print("✅ Client/server setup completed")
+        print("Client/server setup completed")
         
         return (client, server)
     }
@@ -469,6 +469,6 @@ final class MCPFileSearchTests: XCTestCase {
         print("🧹 Starting cleanup...")
         await client.disconnect()
         await server.stop()
-        print("✅ Cleanup completed")
+        print("Cleanup completed")
     }
 }

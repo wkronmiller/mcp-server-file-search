@@ -6,10 +6,10 @@ import Logging
 final class SimpleTests: XCTestCase {
     
     func testBasicConnection() async throws {
-        print("🔧 Creating basic client...")
+        print("Creating basic client...")
         let client = Client(name: "TestClient", version: "1.0.0")
         
-        print("🔧 Creating basic server...")
+        print("Creating basic server...")
         let server = Server(
             name: "test-server",
             version: "1.0.0",
@@ -21,21 +21,21 @@ final class SimpleTests: XCTestCase {
         print("🔗 Creating transport pair...")
         let (clientTransport, serverTransport) = await InMemoryTransport.createConnectedPair()
         
-        print("🚀 Starting server...")
+        print("Starting server...")
         async let _ = server.start(transport: serverTransport)
         
-        print("📡 Connecting client...")
+        print("Connecting client...")
         let result = try await client.connect(transport: clientTransport)
-        print("✅ Client connected: \(result.serverInfo.name)")
+        print("Client connected: \(result.serverInfo.name)")
         
         print("🧹 Disconnecting...")
         await client.disconnect()
         await server.stop()
-        print("✅ Test completed successfully")
+        print("Test completed successfully")
     }
     
     func testSimpleToolListing() async throws {
-        print("🛠️ Testing simple tool listing...")
+        print("Testing simple tool listing...")
         
         let client = Client(name: "TestClient", version: "1.0.0")
         let server = Server(
@@ -48,7 +48,7 @@ final class SimpleTests: XCTestCase {
         
         // Add a simple tool handler
         await server.withMethodHandler(ListTools.self) { _ in
-            print("📋 Server: Listing tools...")
+            print("Server: Listing tools...")
             return .init(tools: [
                 Tool(
                     name: "test.tool",
@@ -71,15 +71,15 @@ final class SimpleTests: XCTestCase {
         async let _ = server.start(transport: serverTransport)
         _ = try await client.connect(transport: clientTransport)
         
-        print("📋 Client: Requesting tools...")
+        print("Client: Requesting tools...")
         let (tools, _) = try await client.listTools()
-        print("📋 Got \(tools.count) tools")
+        print("Got \(tools.count) tools")
         
         XCTAssertEqual(tools.count, 1)
         XCTAssertEqual(tools.first?.name, "test.tool")
         
         await client.disconnect()
         await server.stop()
-        print("✅ Simple tool test completed")
+        print("Simple tool test completed")
     }
 }

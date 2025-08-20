@@ -11,7 +11,7 @@ final class IntegrationTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        print("🧪 Starting integration test: \(name)")
+        print("Starting integration test: \(name)")
         
         // Build the server if needed
         buildServerIfNeeded()
@@ -19,7 +19,7 @@ final class IntegrationTests: XCTestCase {
     
     override func tearDown() {
         stopServer()
-        print("✅ Completed integration test: \(name)")
+        print("Completed integration test: \(name)")
         super.tearDown()
     }
     
@@ -29,7 +29,7 @@ final class IntegrationTests: XCTestCase {
         let serverExecutable = "\(currentDir)/\(serverPath)"
         
         if !fileManager.fileExists(atPath: serverExecutable) {
-            print("📦 Building server executable...")
+            print("Building server executable...")
             let buildProcess = Process()
             buildProcess.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
             buildProcess.arguments = ["build"]
@@ -43,7 +43,7 @@ final class IntegrationTests: XCTestCase {
                     XCTFail("Failed to build server executable")
                     return
                 }
-                print("✅ Server executable built successfully")
+                print("Server executable built successfully")
             } catch {
                 XCTFail("Failed to run swift build: \(error)")
             }
@@ -72,26 +72,26 @@ final class IntegrationTests: XCTestCase {
         do {
             try process.run()
             self.serverProcess = process
-            print("🚀 Server started with PID: \(process.processIdentifier)")
+            print("Server started with PID: \(process.processIdentifier)")
             
             // Give the server more time to start up and listen for requests
             usleep(1_000_000) // 1.0 second
             
             // Verify server is still running
             if !process.isRunning {
-                print("❌ Server process died immediately")
+                print("Server process died immediately")
                 
                 // Read stderr to see what went wrong
                 let stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
                 if let stderrString = String(data: stderrData, encoding: .utf8), !stderrString.isEmpty {
-                    print("❌ Server stderr: \(stderrString)")
+                    print("Server stderr: \(stderrString)")
                 }
                 
                 XCTFail("Server process terminated unexpectedly")
                 return nil
             }
             
-            print("✅ Server is running and ready")
+            print("Server is running and ready")
             return (stdin: stdin, stdout: stdout, stderr: stderr)
         } catch {
             XCTFail("Failed to start server process: \(error)")
@@ -104,14 +104,14 @@ final class IntegrationTests: XCTestCase {
             if process.isRunning {
                 process.terminate()
                 process.waitUntilExit()
-                print("🛑 Server stopped")
+                print("Server stopped")
             }
             serverProcess = nil
         }
     }
     
     private func sendJSONRPCRequest(_ request: String, to stdin: Pipe, from stdout: Pipe, stderr: Pipe) throws -> String? {
-        print("📤 Sending request: \(request)")
+        print("Sending request: \(request)")
         
         // Send request
         let requestData = (request + "\n").data(using: .utf8)!
@@ -131,7 +131,7 @@ final class IntegrationTests: XCTestCase {
                 responseData.append(availableData)
                 // Simple check to see if we have a complete JSON object
                 if let responseString = String(data: responseData, encoding: .utf8), responseString.contains("}") {
-                    print("📥 Received response: \(responseString)")
+                    print("Received response: \(responseString)")
                     return responseString.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
             }
@@ -139,17 +139,17 @@ final class IntegrationTests: XCTestCase {
             usleep(100_000) // 0.1 seconds
         }
         
-        print("❌ No data received within timeout")
+        print("No data received within timeout")
         let stderrData = stderr.fileHandleForReading.availableData
         if !stderrData.isEmpty, let stderrString = String(data: stderrData, encoding: .utf8) {
-            print("❌ Server stderr: \(stderrString)")
+            print("Server stderr: \(stderrString)")
         }
         
         throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No response received within timeout"])
     }
     
     func testRealMCPServerInitialization() throws {
-        print("🔧 Testing real MCP server initialization via JSON-RPC...")
+        print("Testing real MCP server initialization via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
             XCTFail("Failed to start server")
@@ -160,10 +160,10 @@ final class IntegrationTests: XCTestCase {
         {"jsonrpc":"2.0","method":"initialize","params":{"clientInfo":{"name":"test-client","version":"1.0.0"},"capabilities":{}},"id":1}
         """
         
-        print("📡 Sending initialization request...")
+        print("Sending initialization request...")
         let response = try sendJSONRPCRequest(initRequest, to: serverPipes.stdin, from: serverPipes.stdout, stderr: serverPipes.stderr)
         
-        print("📄 Received response: \(response ?? "nil")")
+        print("Received response: \(response ?? "nil")")
         XCTAssertNotNil(response, "Should receive a response")
         
         if let responseStr = response {
@@ -174,7 +174,7 @@ final class IntegrationTests: XCTestCase {
     }
     
     func testRealMCPServerToolListing() throws {
-        print("🛠️ Testing real MCP server tool listing via JSON-RPC...")
+        print("Testing real MCP server tool listing via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
             XCTFail("Failed to start server")
@@ -193,10 +193,10 @@ final class IntegrationTests: XCTestCase {
         {"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}
         """
         
-        print("📋 Sending tools/list request...")
+        print("Sending tools/list request...")
         let response = try sendJSONRPCRequest(toolsRequest, to: serverPipes.stdin, from: serverPipes.stdout, stderr: serverPipes.stderr)
         
-        print("📄 Received response: \(response ?? "nil")")
+        print("Received response: \(response ?? "nil")")
         XCTAssertNotNil(response, "Should receive a response")
         
         if let responseStr = response {
@@ -207,7 +207,7 @@ final class IntegrationTests: XCTestCase {
     }
     
     func testRealMCPServerFileSearch() throws {
-        print("🔍 Testing real MCP server file search via JSON-RPC...")
+        print("Testing real MCP server file search via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
             XCTFail("Failed to start server")
@@ -226,10 +226,10 @@ final class IntegrationTests: XCTestCase {
         {"jsonrpc":"2.0","method":"tools/call","params":{"name":"file-search","arguments":{"query":"Package.swift","filenameOnly":true,"limit":5}},"id":3}
         """
         
-        print("🔍 Sending file-search request for Package.swift...")
+        print("Sending file-search request for Package.swift...")
         let response = try sendJSONRPCRequest(searchRequest, to: serverPipes.stdin, from: serverPipes.stdout, stderr: serverPipes.stderr)
         
-        print("📄 Received response: \(response ?? "nil")")
+        print("Received response: \(response ?? "nil")")
         XCTAssertNotNil(response, "Should receive a response")
         
         if let responseStr = response {
@@ -244,7 +244,7 @@ final class IntegrationTests: XCTestCase {
     }
     
     func testRealMCPServerSearchInDirectory() throws {
-        print("📁 Testing real MCP server directory-scoped search via JSON-RPC...")
+        print("Testing real MCP server directory-scoped search via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
             XCTFail("Failed to start server")
@@ -267,10 +267,10 @@ final class IntegrationTests: XCTestCase {
         {"jsonrpc":"2.0","method":"tools/call","params":{"name":"file-search","arguments":{"query":"main.swift","onlyIn":["\(sourcesDir)"],"filenameOnly":true,"limit":10}},"id":4}
         """
         
-        print("📁 Sending directory-scoped search request...")
+        print("Sending directory-scoped search request...")
         let response = try sendJSONRPCRequest(searchRequest, to: serverPipes.stdin, from: serverPipes.stdout, stderr: serverPipes.stderr)
         
-        print("📄 Received response: \(response ?? "nil")")
+        print("Received response: \(response ?? "nil")")
         XCTAssertNotNil(response, "Should receive a response")
         
         // Assert that it actually found main.swift
@@ -288,7 +288,7 @@ final class IntegrationTests: XCTestCase {
     }
     
     func testRealMCPServerErrorHandling() throws {
-        print("❌ Testing real MCP server error handling via JSON-RPC...")
+        print("Testing real MCP server error handling via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
             XCTFail("Failed to start server")
@@ -307,10 +307,10 @@ final class IntegrationTests: XCTestCase {
         {"jsonrpc":"2.0","method":"tools/call","params":{"name":"invalid-tool","arguments":{"query":"test"}},"id":5}
         """
         
-        print("❌ Sending invalid tool request...")
+        print("Sending invalid tool request...")
         let response = try sendJSONRPCRequest(invalidToolRequest, to: serverPipes.stdin, from: serverPipes.stdout, stderr: serverPipes.stderr)
         
-        print("📄 Received response: \(response ?? "nil")")
+        print("Received response: \(response ?? "nil")")
         XCTAssertNotNil(response, "Should receive a response")
         
         if let responseStr = response {
