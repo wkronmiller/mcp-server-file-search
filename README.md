@@ -8,15 +8,28 @@ Spotlight-backed MCP server that searches files on macOS over stdio. It exposes 
 - Spotlight indexing enabled for the locations you want to search
 
 ## Build and Run
+
+### Standard Commands (recommended)
+Use the Makefile for consistent builds with strict concurrency checking:
 ```bash
-# Build
-swift build
+# Full development workflow (clean, build, test, integration test)
+make all
 
-# Binary
+# Individual commands
+make build           # Build with strict concurrency checking
+make test            # Run all tests with strict concurrency checking  
+make integration-test# Run integration test script
+make clean           # Clean build artifacts
+
+# Binary location after build
 .build/debug/mcp-file-search
+```
 
-# Quick integration test (starts server and exercises MCP over stdio)
-./test_mcp.sh --query Package.swift --filename-only --limit 5
+### Direct Swift Commands (advanced)
+For development that doesn't require strict concurrency checking:
+```bash
+swift build          # Standard build
+swift test           # Standard tests
 ```
 
 ## What It Implements
@@ -119,11 +132,27 @@ Add an MCP server with a stdio command pointing to the built binary:
 ```
 
 ## Development
-Common commands:
-- Build: `swift build`
-- Test all: `swift test`
-- Run integration test: `./test_mcp.sh --query Package.swift --filename-only --limit 5`
-- Directory-scoped example: `./test_mcp.sh --query .swift --filename-only --only-in "$(pwd)" --limit 10`
+
+### Standard Workflow
+The Makefile provides the standard development workflow that matches CI:
+```bash
+make all             # Full workflow: clean, build, test, integration test
+make build           # Build with strict concurrency checking (matches CI)
+make test            # Run tests with strict concurrency checking (matches CI)
+make integration-test# Run integration test script
+```
+
+### Integration Test Examples
+The integration test script can be run standalone:
+```bash
+# Basic integration test
+./test_mcp.sh --query Package.swift --filename-only --limit 5
+
+# Directory-scoped search
+./test_mcp.sh --query .swift --filename-only --only-in "$(pwd)" --limit 10
+```
+
+**Note**: Both local development and CI use the same `make` commands with identical strict concurrency checking settings. This ensures no CI surprises.
 
 ## License
 MIT. See `LICENSE`.

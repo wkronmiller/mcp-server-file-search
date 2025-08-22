@@ -58,8 +58,6 @@ private class MainActorSpotlightQuery {
     static func execute(args: SearchArgs, limit: Int) async throws -> [SearchHit] {
         return try await withCheckedThrowingContinuation { continuation in
             let query = NSMetadataQuery()
-            var hasResumed = false
-            var observer: NSObjectProtocol?
             
             // Configure query
             query.predicate = Self.buildPredicate(for: args)
@@ -68,46 +66,66 @@ private class MainActorSpotlightQuery {
             
             Logger.debug("Query configured with predicate: \(query.predicate?.description ?? "none")")
             
-            func cleanup() {
-                if let obs = observer {
-                    NotificationCenter.default.removeObserver(obs)
-                    observer = nil
+            // Use a simple completion handler to avoid Sendable issues
+            final class QueryHandler {
+                var hasResumed = false
+                var observer: NSObjectProtocol?
+                var timeoutTask: Task<Void, Never>?
+                let continuation: CheckedContinuation<[SearchHit], Error>
+                let query: NSMetadataQuery
+                let limit: Int
+                
+                init(continuation: CheckedContinuation<[SearchHit], Error>, query: NSMetadataQuery, limit: Int) {
+                    self.continuation = continuation
+                    self.query = query
+                    self.limit = limit
                 }
-                query.stop()
+                
+                func cleanup() {
+                    if let obs = observer {
+                        NotificationCenter.default.removeObserver(obs)
+                        observer = nil
+                    }
+                    timeoutTask?.cancel()
+                    timeoutTask = nil
+                    query.stop()
+                }
+                
+                func resumeWith(results: [SearchHit]) {
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    cleanup()
+                    Logger.debug("Resuming continuation with \(results.count) results")
+                    continuation.resume(returning: results)
+                }
+                
+                func resumeWithError(_ error: Error) {
+                    guard !hasResumed else { return }
+                    hasResumed = true
+                    cleanup()
+                    Logger.error("Resuming continuation with error: \(error)")
+                    continuation.resume(throwing: error)
+                }
             }
             
-            func resumeWith(results: [SearchHit]) {
-                guard !hasResumed else { return }
-                hasResumed = true
-                cleanup()
-                Logger.debug("Resuming continuation with \(results.count) results")
-                continuation.resume(returning: results)
-            }
+            let handler = QueryHandler(continuation: continuation, query: query, limit: limit)
             
-            func resumeWithError(_ error: Error) {
-                guard !hasResumed else { return }
-                hasResumed = true
-                cleanup()
-                Logger.error("Resuming continuation with error: \(error)")
-                continuation.resume(throwing: error)
-            }
-            
-            // Set up completion observer (only using completion, not progress for simplicity)
-            observer = NotificationCenter.default.addObserver(
+            // Set up completion observer
+            handler.observer = NotificationCenter.default.addObserver(
                 forName: .NSMetadataQueryDidFinishGathering,
                 object: query,
                 queue: .main
             ) { _ in
                 Logger.debug("Query finished gathering, total results: \(query.resultCount)")
                 let results = Self.extractResults(from: query, limit: limit)
-                resumeWith(results: results)
+                handler.resumeWith(results: results)
             }
             
             // Start the query
             Logger.debug("Starting NSMetadataQuery")
             guard query.start() else {
                 Logger.error("Failed to start NSMetadataQuery")
-                resumeWithError(SpotlightSearchError.failedToStart)
+                handler.resumeWithError(SpotlightSearchError.failedToStart)
                 return
             }
             
@@ -115,16 +133,21 @@ private class MainActorSpotlightQuery {
             
             // Set up timeout (default 10 seconds, overridable via args.timeoutSeconds)
             let timeoutSeconds = args.timeoutSeconds ?? 10.0
-            Task {
+            handler.timeoutTask = Task { @MainActor in
                 let nanos = UInt64(max(0, timeoutSeconds) * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: nanos)
-                
-                guard !hasResumed else { return }
+                do {
+                    try await Task.sleep(nanoseconds: nanos)
+                } catch {
+                    // Cancelled: exit early to avoid retaining query/closures
+                    return
+                }
+
+                guard !handler.hasResumed, !Task.isCancelled else { return }
                 Logger.warning("Query timed out after \(timeoutSeconds) seconds, returning partial results")
                 Logger.warning("Partial result count: \(query.resultCount)")
-                
+
                 let results = Self.extractResults(from: query, limit: limit)
-                resumeWith(results: results)
+                handler.resumeWith(results: results)
             }
         }
     }

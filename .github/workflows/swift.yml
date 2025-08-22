@@ -1,4 +1,4 @@
-# This workflow will build a Swift project
+# This workflow will build a Swift project using the unified Makefile commands
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
 
 name: Swift
@@ -17,12 +17,15 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Setup Swift
-      uses: swift-actions/setup-swift@v2 # Use the latest version of setup-swift
+      uses: swift-actions/setup-swift@v2
       with:
         swift-version: 6.0.0 # Specify the required Swift version
 
     - name: Build
-      run: swift build
+      run: make build
 
     - name: Test
-      run: swift test
+      run: make test
+
+    - name: Integration Test
+      run: make integration-test

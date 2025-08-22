@@ -15,7 +15,7 @@ public class MCPFileSearchServer {
             instructions: "A Model Context Protocol (MCP) server that provides Spotlight-based file search capabilities on macOS. Use the file-search tool to search for files by name or content across the local filesystem.",
             capabilities: .init(
                 tools: .init(listChanged: true)
-            ),
+            )
         )
         
         Logger.debug("Server instance created successfully")

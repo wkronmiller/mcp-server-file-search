@@ -12,7 +12,6 @@ let package = Package(
         .executableTarget(
             name: "MCPFileSearch",
             dependencies: [ .product(name: "MCP", package: "swift-sdk") ],
-
             linkerSettings: [
                 .linkedFramework("CoreServices"),
                 .linkedFramework("Foundation")
@@ -24,7 +23,6 @@ let package = Package(
                 "MCPFileSearch",
                 .product(name: "MCP", package: "swift-sdk")
             ]
-
         )
     ]
 )

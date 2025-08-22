@@ -1,11 +1,19 @@
 # Agent Guidelines for MCP File Search Server
 
 ## Build/Test/Lint Commands
-- **Build**: `swift build` - Builds the executable target `mcp-file-search`
-- **Test All**: `swift test` - Runs the full test suite
+**Standard unified commands (used by both local dev and CI):**
+- **Full Workflow**: `make all` - Clean, build, test, integration test (recommended)
+- **Build**: `make build` - Builds with strict concurrency checking
+- **Test All**: `make test` - Runs the full test suite with strict concurrency
+- **Integration Test**: `make integration-test` - Tests MCP server via JSON-RPC  
+- **Clean**: `make clean` - Clean build artifacts
+
+**Individual Swift commands (for advanced use):**
 - **Test Single**: `swift test --filter <TestClassName>.<testMethodName>` - Run specific test method
-- **Integration Test**: `./test_mcp.sh` - Tests MCP server via JSON-RPC (requires built binary)
-- **No linting tools configured** - Follow Swift standard formatting
+- **Direct Build**: `swift build` - Standard build without strict concurrency
+- **Direct Test**: `swift test` - Standard tests without strict concurrency
+
+**No linting tools configured** - Follow Swift standard formatting
 
 ## Project Structure
 - **Target**: Swift Package Manager executable for macOS 13+ 
@@ -14,9 +22,11 @@
 - **Binary Location**: `.build/debug/mcp-file-search` after build
 
 ## Integration Testing
-- Script: `./test_mcp.sh` sends JSON-RPC over stdio to the built server.
-- Ensure binary exists: `swift build` (the script will build if missing).
-- Common usage:
+- **Standard**: `make integration-test` - Runs the complete integration test (recommended)
+- **Script**: `./test_mcp.sh` sends JSON-RPC over stdio to the built server.
+- **Auto-build**: The script will build if missing using `make build`.
+- **Common usage**:
+  - Standard integration test: `make integration-test`
   - Initialize + list tools + call search: `./test_mcp.sh --query Package.swift --filename-only --limit 5`
   - Directory-scoped search: `./test_mcp.sh --query .swift --filename-only --only-in "$(pwd)" --limit 10`
   - Init only: `MODE=init ./test_mcp.sh --init-only`
