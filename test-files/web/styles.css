@@ -1,0 +1,32 @@
+/* Main stylesheet for the application */
+/* Keywords: CSS, styling, responsive design, flexbox, grid */
+
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --background: #f8f9fa;
+    --text-color: #333;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--background);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Responsive grid layout */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Keywords: animation, transition, transform, media queries */

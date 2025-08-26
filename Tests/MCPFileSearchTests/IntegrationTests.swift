@@ -2,6 +2,9 @@ import XCTest
 import Foundation
 @testable import MCPFileSearch
 
+/// End-to-end integration tests using real server processes and JSON-RPC communication.
+/// These tests verify that the complete system works as a standalone MCP server
+/// by launching the actual executable and communicating via stdin/stdout JSON-RPC.
 final class IntegrationTests: XCTestCase {
     
     private var serverProcess: Process?
@@ -23,6 +26,22 @@ final class IntegrationTests: XCTestCase {
         super.tearDown()
     }
     
+    // MARK: - Build and Server Management
+    
+    /// Builds the MCP server executable if it doesn't already exist.
+    /// 
+    /// **Purpose**: Ensures the server binary is available for integration testing
+    /// by building it automatically when needed.
+    /// 
+    /// **What it does**:
+    /// - Checks if the server executable exists at expected path
+    /// - Runs `swift build` if the executable is missing
+    /// - Validates build success before proceeding with tests
+    /// - Handles build failures appropriately
+    /// 
+    /// **Why it exists**: Integration tests need the actual compiled server binary.
+    /// This helper ensures the binary is always available, building it on-demand
+    /// to avoid manual build steps in the test workflow.
     private func buildServerIfNeeded() {
         let fileManager = FileManager.default
         let currentDir = fileManager.currentDirectoryPath
@@ -50,6 +69,21 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
+    /// Launches the MCP server as a separate process with pipe communication.
+    /// 
+    /// **Purpose**: Starts the actual MCP server binary as a child process to test
+    /// real JSON-RPC communication over stdin/stdout.
+    /// 
+    /// **What it does**:
+    /// - Launches the server executable as a child process
+    /// - Sets up stdin/stdout/stderr pipes for communication
+    /// - Waits for server startup and validates it's running
+    /// - Returns pipes for JSON-RPC communication
+    /// - Handles startup failures and error reporting
+    /// 
+    /// **Why it exists**: Integration tests must verify the complete system including
+    /// process startup, JSON-RPC parsing, and real MCP protocol handling. This
+    /// method provides the foundation for true end-to-end testing.
     private func startServer() -> (stdin: Pipe, stdout: Pipe, stderr: Pipe)? {
         let currentDir = FileManager.default.currentDirectoryPath
         let serverExecutable = "\(currentDir)/\(serverPath)"
@@ -99,6 +133,20 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
+    /// Gracefully terminates the server process and cleans up resources.
+    /// 
+    /// **Purpose**: Ensures proper cleanup of server processes and prevents
+    /// resource leaks or zombie processes during test runs.
+    /// 
+    /// **What it does**:
+    /// - Terminates the running server process if active
+    /// - Waits for process termination to complete
+    /// - Cleans up process references
+    /// - Logs termination for debugging
+    /// 
+    /// **Why it exists**: Each integration test starts its own server process.
+    /// Proper cleanup prevents process accumulation and ensures test isolation
+    /// by fully terminating each server before the next test starts.
     private func stopServer() {
         if let process = serverProcess {
             if process.isRunning {
@@ -110,6 +158,23 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
+    // MARK: - JSON-RPC Communication
+    
+    /// Sends a JSON-RPC request to the server and waits for a response.
+    /// 
+    /// **Purpose**: Provides the core communication mechanism for integration tests
+    /// by handling JSON-RPC request/response cycles over stdin/stdout pipes.
+    /// 
+    /// **What it does**:
+    /// - Sends JSON-RPC request string to server via stdin
+    /// - Waits for response on stdout with timeout protection
+    /// - Handles partial responses and ensures complete JSON objects
+    /// - Captures and reports stderr output for debugging
+    /// - Returns the complete JSON-RPC response string
+    /// 
+    /// **Why it exists**: Integration tests need to send actual MCP protocol
+    /// messages to the server. This method handles the complexity of pipe
+    /// communication, timeouts, and response parsing for reliable testing.
     private func sendJSONRPCRequest(_ request: String, to stdin: Pipe, from stdout: Pipe, stderr: Pipe) throws -> String? {
         print("Sending request: \(request)")
         
@@ -148,7 +213,24 @@ final class IntegrationTests: XCTestCase {
         throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No response received within timeout"])
     }
     
-    func testRealMCPServerInitialization() throws {
+    // MARK: - Integration Tests
+    
+    /// Tests complete MCP server initialization via JSON-RPC protocol.
+    /// 
+    /// **Purpose**: Verifies that the server can be launched, initialized via MCP
+    /// protocol, and returns correct server information and capabilities.
+    /// 
+    /// **What it tests**:
+    /// - Real server process startup and readiness
+    /// - MCP initialization handshake via JSON-RPC
+    /// - Server info response (name: "mac-file-search", version)
+    /// - Server capabilities advertisement (tools capability)
+    /// - Complete protocol compliance for initialization
+    /// 
+    /// **Why it exists**: This is the fundamental integration test ensuring our
+    /// server works as a real MCP server that clients can discover and connect to.
+    /// Without this working, no MCP client could use our server.
+    func testServerInitialization() throws {
         print("Testing real MCP server initialization via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
@@ -173,7 +255,22 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
-    func testRealMCPServerToolListing() throws {
+    /// Tests MCP tool discovery via JSON-RPC tools/list request.
+    /// 
+    /// **Purpose**: Verifies that the server properly advertises its available tools
+    /// through the standard MCP tool discovery mechanism.
+    /// 
+    /// **What it tests**:
+    /// - Server initialization followed by tool listing
+    /// - MCP tools/list request/response cycle
+    /// - Tool metadata in response (file-search tool presence)
+    /// - Complete JSON-RPC protocol compliance for tool discovery
+    /// - Tool schema and description availability
+    /// 
+    /// **Why it exists**: Tool discovery is essential for MCP clients to know
+    /// what functionality is available. This test ensures our file-search tool
+    /// is properly advertised and discoverable by real MCP clients.
+    func testServerToolListing() throws {
         print("Testing real MCP server tool listing via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
@@ -206,7 +303,22 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
-    func testRealMCPServerFileSearch() throws {
+    /// Tests actual file search functionality via JSON-RPC tools/call request.
+    /// 
+    /// **Purpose**: Verifies that the complete file search workflow works end-to-end
+    /// with real Spotlight queries and JSON-RPC communication.
+    /// 
+    /// **What it tests**:
+    /// - Complete MCP initialization and tool calling workflow
+    /// - Real file search execution with Spotlight integration
+    /// - Search parameter handling (query, filenameOnly, limit)
+    /// - JSON response format and search result structure
+    /// - Actual file discovery (Package.swift files)
+    /// 
+    /// **Why it exists**: This is the core functionality test ensuring the entire
+    /// system works together - MCP protocol, Spotlight search, and result formatting.
+    /// This test validates the primary use case for our server.
+    func testServerFileSearch() throws {
         print("Testing real MCP server file search via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
@@ -243,7 +355,22 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
-    func testRealMCPServerSearchInDirectory() throws {
+    /// Tests directory-scoped file search via JSON-RPC with onlyIn parameter.
+    /// 
+    /// **Purpose**: Verifies that directory-scoped searches work correctly through
+    /// the complete MCP protocol stack with real Spotlight queries.
+    /// 
+    /// **What it tests**:
+    /// - Directory-scoped search using onlyIn parameter
+    /// - Real Spotlight query with directory restrictions
+    /// - Specific file discovery (main.swift in Sources directory)
+    /// - Path validation in search results
+    /// - Complete integration of scoped search functionality
+    /// 
+    /// **Why it exists**: Directory scoping is a critical feature for practical
+    /// file search usage. This test ensures the onlyIn parameter works correctly
+    /// through the entire system stack in real-world usage scenarios.
+    func testServerSearchInDirectory() throws {
         print("Testing real MCP server directory-scoped search via JSON-RPC...")
         
         guard let serverPipes = startServer() else {
@@ -287,7 +414,22 @@ final class IntegrationTests: XCTestCase {
         }
     }
     
-    func testRealMCPServerErrorHandling() throws {
+    /// Tests server error handling with invalid tool calls via JSON-RPC.
+    /// 
+    /// **Purpose**: Verifies that the server handles invalid requests gracefully
+    /// and returns proper error responses through the MCP protocol.
+    /// 
+    /// **What it tests**:
+    /// - Invalid tool name handling via JSON-RPC
+    /// - Proper error response format (isError flag)
+    /// - Error message content ("Unknown tool")
+    /// - Server stability after receiving invalid requests
+    /// - Complete error handling through the protocol stack
+    /// 
+    /// **Why it exists**: Robust error handling is essential for production MCP
+    /// servers. This test ensures our server handles client errors gracefully
+    /// without crashing and provides helpful error messages for debugging.
+    func testServerErrorHandling() throws {
         print("Testing real MCP server error handling via JSON-RPC...")
         
         guard let serverPipes = startServer() else {

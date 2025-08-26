@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://user:pass@db:5432/myapp
+    depends_on:
+      - db
+      - redis
+    # Keywords: docker, container, orchestration, deployment
+  
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=myapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Keywords: database, postgresql, persistence
+  
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    # Keywords: cache, session, redis
+
+volumes:
+  postgres_data:
+
+# Additional keywords: DevOps, infrastructure, microservices

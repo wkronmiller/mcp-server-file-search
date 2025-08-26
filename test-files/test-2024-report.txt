@@ -1,0 +1,3 @@
+Annual Report 2024
+This file has a date in its name for testing date-based filename searches.
+Content: Financial data, performance metrics, quarterly results

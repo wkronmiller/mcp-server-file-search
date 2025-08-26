@@ -1,0 +1,31 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice Johnson",
+      "email": "alice@example.com",
+      "role": "admin",
+      "created": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Bob Smith",
+      "email": "bob@example.com",
+      "role": "user",
+      "created": "2024-02-20T14:45:00Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 101,
+      "name": "Widget Pro",
+      "price": 99.99,
+      "category": "electronics"
+    }
+  ],
+  "metadata": {
+    "generated": "2024-03-01",
+    "format": "JSON",
+    "keywords": ["sample", "test data", "mock", "fixtures"]
+  }
+}
