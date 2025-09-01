@@ -1,6 +1,6 @@
 import Foundation
 
-/// Defines the type of search to perform on files
+/// Defines the type of search to perform on files (legacy - use FilterGroup for advanced queries)
 public enum QueryType: String, Codable, Sendable {
     /// Search by file extension
     case `extension` = "extension"
@@ -40,18 +40,82 @@ public struct DateFilter: Codable, Sendable {
     let to: Date?
 }
 
+/// Filter for size-based searches on file sizes
+public struct SizeFilter: Codable, Sendable {
+    /// Minimum file size in bytes (inclusive)
+    let minSize: Int64?
+    /// Maximum file size in bytes (inclusive)
+    let maxSize: Int64?
+}
+
+/// Individual filter criteria that can be combined
+public enum SearchFilter: Codable, Sendable {
+    /// Search within file contents
+    case content(query: String)
+    /// Search by filename
+    case filename(query: String)
+    /// Filter by file extensions (OR logic within extensions)
+    case extensions([String])
+    /// Filter by modification date range
+    case dateModified(DateFilter)
+    /// Filter by creation date range
+    case dateCreated(DateFilter)
+    /// Filter by file size range
+    case size(SizeFilter)
+    /// Limit to specific directory paths
+    case paths([String])
+}
+
+/// Combination logic for multiple filters
+public enum FilterCombination: String, Codable, Sendable {
+    /// All filters must match (default)
+    case and = "and"
+    /// Any filter can match
+    case or = "or"
+}
+
+/// Group of filters with combination logic
+public struct FilterGroup: Codable, Sendable {
+    /// List of filters to apply
+    let filters: [SearchFilter]
+    /// How to combine the filters (default: and)
+    let combination: FilterCombination?
+    
+    public init(filters: [SearchFilter], combination: FilterCombination? = nil) {
+        self.filters = filters
+        self.combination = combination
+    }
+}
+
+/// Advanced query structure supporting filter combinations
+public struct AdvancedQuery: Codable, Sendable {
+    /// Groups of filters (OR logic between groups, AND/OR logic within groups)
+    let filterGroups: [FilterGroup]
+    
+    public init(filterGroups: [FilterGroup]) {
+        self.filterGroups = filterGroups
+    }
+    
+    /// Helper to create a simple single-group query
+    public static func single(filters: [SearchFilter], combination: FilterCombination = .and) -> AdvancedQuery {
+        return AdvancedQuery(filterGroups: [FilterGroup(filters: filters, combination: combination)])
+    }
+}
+
 /// Arguments for configuring a file search operation
 public struct SearchArgs: Codable, Sendable {
-    /// The search query text
+    /// The search query text (legacy - use advancedQuery for complex searches)
     let query: String
-    /// Type of search to perform (defaults to .all if not specified)
+    /// Type of search to perform (defaults to .all if not specified, legacy)
     let queryType: QueryType?
-    /// File extensions to search when queryType is .extension
+    /// File extensions to search when queryType is .extension (legacy)
     let extensions: [String]?
-    /// Limit search to specific directory paths
+    /// Limit search to specific directory paths (legacy - use advancedQuery)
     let onlyIn: [String]?
-    /// Filter results by modification date range
+    /// Filter results by modification date range (legacy - use advancedQuery)
     let dateFilter: DateFilter?
+    /// Advanced query with filter combinations
+    let advancedQuery: AdvancedQuery?
     /// How to sort the results
     let sortBy: SortOption?
     /// Order for sorting results
@@ -68,6 +132,7 @@ public struct SearchArgs: Codable, Sendable {
                 extensions: [String]? = nil,
                 onlyIn: [String]? = nil,
                 dateFilter: DateFilter? = nil,
+                advancedQuery: AdvancedQuery? = nil,
                 sortBy: SortOption? = nil,
                 sortOrder: SortOrder? = nil,
                 limit: Int? = nil,
@@ -77,6 +142,7 @@ public struct SearchArgs: Codable, Sendable {
         self.extensions = extensions
         self.onlyIn = onlyIn
         self.dateFilter = dateFilter
+        self.advancedQuery = advancedQuery
         self.sortBy = sortBy
         self.sortOrder = sortOrder
         self.limit = limit
@@ -89,6 +155,22 @@ public struct SearchArgs: Codable, Sendable {
         } else {
             self.queryType = queryType
         }
+    }
+    
+    /// Helper to create SearchArgs with advanced query
+    public static func advanced(_ advancedQuery: AdvancedQuery,
+                               sortBy: SortOption? = nil,
+                               sortOrder: SortOrder? = nil,
+                               limit: Int? = nil,
+                               timeoutSeconds: Double? = nil) -> SearchArgs {
+        return SearchArgs(
+            query: "", // Empty for advanced queries
+            advancedQuery: advancedQuery,
+            sortBy: sortBy,
+            sortOrder: sortOrder,
+            limit: limit,
+            timeoutSeconds: timeoutSeconds
+        )
     }
 }
 

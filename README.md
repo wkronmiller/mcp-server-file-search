@@ -39,16 +39,36 @@ swift test           # Standard tests
 - Logs: `~/.local/share/mcp-file-search/log/<pid>.log`
 
 ## Tool: file-search
-Input schema (fields are optional unless noted):
+The tool now supports both **simple queries** (legacy) and **advanced queries** with complex filter combinations.
+
+### Simple Query Parameters (Legacy)
 - query: Search text (string). For `extension` use extension without dot. Wildcards `*` are supported for name/content searches.
 - queryType: One of `extension | contents | filename | all` (default: `all`).
 - extensions: Array of extensions (no dots). Used with `queryType = extension`.
 - onlyIn: Array of absolute directory paths to scope the search.
 - dateFilter: Object with ISO 8601 `from` and `to` timestamps, applied to modification date.
+- filenameOnly: Boolean. Back-compat shortcut for `queryType = filename`.
+
+### Advanced Query Parameters
+- **advancedQuery**: Object supporting complex filter combinations with AND/OR logic:
+  - **filterGroups**: Array of filter groups (groups combined with OR logic)
+    - **filters**: Array of individual filters (combined with AND/OR logic within group)
+    - **combination**: `"and"` or `"or"` (default: `"and"`)
+
+#### Supported Filter Types:
+- `{"content": {"query": "text"}}` - Search file contents
+- `{"filename": {"query": "pattern"}}` - Search filenames
+- `{"extensions": ["ext1", "ext2"]}` - Filter by extensions (OR logic)
+- `{"dateModified": {"from": "ISO-date", "to": "ISO-date"}}` - Filter by modification date
+- `{"dateCreated": {"from": "ISO-date", "to": "ISO-date"}}` - Filter by creation date
+- `{"size": {"minSize": bytes, "maxSize": bytes}}` - Filter by file size
+- `{"paths": ["/path1", "/path2"]}` - Limit to specific directories
+
+### Common Parameters
 - sortBy: One of `name | dateModified | dateCreated | size` (default: `name`).
 - sortOrder: `ascending | descending` (default: `ascending`).
 - limit: Max results to return (default: 200).
-- filenameOnly: Boolean. Back-compat shortcut for `queryType = filename`.
+- timeoutSeconds: Search timeout in seconds (default: 10).
 
 Response content is a JSON array of objects:
 - path: Full path (string)
@@ -59,6 +79,8 @@ Response content is a JSON array of objects:
 - modified: ISO 8601 modification date (string, optional)
 
 ### Examples (JSON-RPC over stdio)
+
+#### Simple Query Examples (Legacy)
 Filename-only search, limited to a directory:
 ```json
 {"jsonrpc":"2.0","method":"tools/call","params":{
@@ -84,19 +106,75 @@ Search by extension across the whole machine:
 },"id":2}
 ```
 
-Content search with date filter and sorting:
+#### Advanced Query Examples
+Find documents containing "foo" AND having pdf or docx extensions:
 ```json
 {"jsonrpc":"2.0","method":"tools/call","params":{
   "name":"file-search",
   "arguments":{
-    "query":"invoice",
-    "queryType":"contents",
-    "dateFilter":{"from":"2024-01-01T00:00:00Z","to":"2024-12-31T23:59:59Z"},
-    "sortBy":"dateModified",
-    "sortOrder":"descending",
+    "advancedQuery":{
+      "filterGroups":[
+        {
+          "filters":[
+            {"content":{"query":"foo"}},
+            {"extensions":["pdf","docx"]}
+          ]
+        }
+      ]
+    },
     "limit":25
   }
 },"id":3}
+```
+
+Find either Swift files containing "protocol" OR Python files modified recently:
+```json
+{"jsonrpc":"2.0","method":"tools/call","params":{
+  "name":"file-search",
+  "arguments":{
+    "advancedQuery":{
+      "filterGroups":[
+        {
+          "filters":[
+            {"content":{"query":"protocol"}},
+            {"extensions":["swift"]}
+          ]
+        },
+        {
+          "filters":[
+            {"extensions":["py"]},
+            {"dateModified":{"from":"2024-08-01T00:00:00Z"}}
+          ]
+        }
+      ]
+    },
+    "sortBy":"dateModified",
+    "sortOrder":"descending",
+    "limit":20
+  }
+},"id":4}
+```
+
+Large files in specific directories:
+```json
+{"jsonrpc":"2.0","method":"tools/call","params":{
+  "name":"file-search",
+  "arguments":{
+    "advancedQuery":{
+      "filterGroups":[
+        {
+          "filters":[
+            {"size":{"minSize":1048576}},
+            {"paths":["/Users/john/Documents","/Users/john/Desktop"]}
+          ]
+        }
+      ]
+    },
+    "sortBy":"size",
+    "sortOrder":"descending",
+    "limit":10
+  }
+},"id":5}
 ```
 
 Notes:

@@ -60,8 +60,8 @@ private class MainActorSpotlightQuery {
             let query = NSMetadataQuery()
             
             // Configure query
-            query.predicate = Self.buildPredicate(for: args)
-            query.searchScopes = args.onlyIn ?? [NSMetadataQueryLocalComputerScope]
+            query.predicate = QueryBuilder.buildPredicate(for: args)
+            query.searchScopes = QueryBuilder.extractSearchScopes(from: args)
             query.sortDescriptors = Self.buildSortDescriptors(for: args)
             
             Logger.debug("Query configured with predicate: \(query.predicate?.description ?? "none")")
@@ -152,90 +152,7 @@ private class MainActorSpotlightQuery {
         }
     }
     
-    /// Builds an NSPredicate based on search arguments
-    /// - Parameter args: Search configuration
-    /// - Returns: NSPredicate for use with NSMetadataQuery
-    private static func buildPredicate(for args: SearchArgs) -> NSPredicate {
-        var predicates: [NSPredicate] = []
-        
-        let queryType = args.queryType ?? .all
-        let pattern = "*\(args.query)*"
-        
-        switch queryType {
-        case .extension:
-            if let extensions = args.extensions, !extensions.isEmpty {
-                let extensionPredicates = extensions.map { ext in
-                    NSPredicate(format: "%K LIKE[c] %@", 
-                              kMDItemFSName as NSString, 
-                              "*.\(ext)" as NSString)
-                }
-                if extensionPredicates.count == 1 {
-                    predicates.append(extensionPredicates[0])
-                } else {
-                    predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: extensionPredicates))
-                }
-                Logger.debug("Using extension predicates for: \(extensions.joined(separator: ", "))")
-            } else if !args.query.isEmpty {
-                predicates.append(NSPredicate(format: "%K LIKE[c] %@",
-                                            kMDItemFSName as NSString,
-                                            "*.\(args.query)" as NSString))
-                Logger.debug("Using single extension predicate for: \(args.query)")
-            }
-            
-        case .contents:
-            if !args.query.isEmpty {
-                predicates.append(NSPredicate(format: "%K LIKE[c] %@",
-                                            kMDItemTextContent as NSString,
-                                            pattern as NSString))
-                Logger.debug("Using content-only predicate")
-            }
-            
-        case .filename:
-            if !args.query.isEmpty {
-                predicates.append(NSPredicate(format: "%K LIKE[c] %@",
-                                            kMDItemFSName as NSString,
-                                            pattern as NSString))
-                Logger.debug("Using filename-only predicate")
-            }
-            
-        case .all:
-            if !args.query.isEmpty {
-                let allPredicate = NSPredicate(
-                    format: "%K LIKE[c] %@ OR %K LIKE[c] %@",
-                    kMDItemFSName as NSString, pattern as NSString,
-                    kMDItemTextContent as NSString, pattern as NSString
-                )
-                predicates.append(allPredicate)
-                Logger.debug("Using filename + content predicate")
-            }
-        }
-        
-        if let dateFilter = args.dateFilter {
-            if let from = dateFilter.from {
-                predicates.append(NSPredicate(format: "%K >= %@",
-                                            kMDItemFSContentChangeDate as NSString,
-                                            from as NSDate))
-                Logger.debug("Added date filter: from \(from)")
-            }
-            if let to = dateFilter.to {
-                predicates.append(NSPredicate(format: "%K <= %@",
-                                            kMDItemFSContentChangeDate as NSString,
-                                            to as NSDate))
-                Logger.debug("Added date filter: to \(to)")
-            }
-        }
-        
-        if predicates.isEmpty {
-            Logger.debug("No predicates specified, returning match-all predicate")
-            return NSPredicate(value: true)
-        } else if predicates.count == 1 {
-            return predicates[0]
-        } else {
-            let compound = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            Logger.debug("Created compound predicate with \(predicates.count) conditions")
-            return compound
-        }
-    }
+
     
     /// Builds sort descriptors based on search arguments
     /// - Parameter args: Search configuration
