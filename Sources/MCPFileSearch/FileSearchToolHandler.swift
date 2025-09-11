@@ -245,12 +245,20 @@ public class FileSearchToolHandler {
             )
 
             Logger.info("Starting Spotlight search with query: '\(query)'")
+            #if os(macOS)
             let startTime = CFAbsoluteTimeGetCurrent()
+            #else
+            let startTime = Date().timeIntervalSinceReferenceDate
+            #endif
             
             // Run Spotlight query using the new actor-based implementation
             let hits = try await SpotlightSearchActor.shared.search(args)
             
+            #if os(macOS)
             let duration = CFAbsoluteTimeGetCurrent() - startTime
+            #else
+            let duration = Date().timeIntervalSinceReferenceDate - startTime
+            #endif
             Logger.info("Search completed in \(String(format: "%.3f", duration))s - found \(hits.count) results")
 
             // Encode JSON response
