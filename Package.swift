@@ -13,7 +13,7 @@ let package = Package(
             name: "MCPFileSearch",
             dependencies: [ .product(name: "MCP", package: "swift-sdk") ],
             linkerSettings: [
-                .linkedFramework("CoreServices"),
+                .linkedFramework("CoreServices", .when(platforms: [.macOS])),
                 .linkedFramework("Foundation")
             ]
         ),
