@@ -3,7 +3,6 @@ import PackageDescription
 
 let package = Package(
     name: "mcp-file-search",
-    platforms: [ .macOS(.v13) ],
     products: [ .executable(name: "mcp-file-search", targets: ["MCPFileSearch"]) ],
     dependencies: [
         .package(url: "https://github.com/modelcontextprotocol/swift-sdk.git", from: "0.1.0")
