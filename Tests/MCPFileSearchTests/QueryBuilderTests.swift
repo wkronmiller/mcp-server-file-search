@@ -1,8 +1,16 @@
 import XCTest
 @testable import MCPFileSearch
+#if os(macOS)
 import CoreServices
+#endif
 
 final class QueryBuilderTests: XCTestCase {
+    
+    override func setUpWithError() throws {
+        #if !os(macOS)
+        throw XCTSkip("QueryBuilder tests require macOS")
+        #endif
+    }
     
     func testLegacyQueryTypeAll() {
         let args = SearchArgs(query: "test", queryType: .all)
@@ -135,26 +143,38 @@ final class QueryBuilderTests: XCTestCase {
         
         let scopes = QueryBuilder.extractSearchScopes(from: args)
         
+        #if os(macOS)
         XCTAssertEqual(scopes.count, 2)
         XCTAssertTrue(scopes.contains("/Users/test/Documents"))
         XCTAssertTrue(scopes.contains("/Users/test/Desktop"))
+        #else
+        XCTAssertEqual(scopes.count, 0)
+        #endif
     }
     
     func testLegacySearchScopes() {
         let args = SearchArgs(query: "test", onlyIn: ["/tmp", "/var"])
         let scopes = QueryBuilder.extractSearchScopes(from: args)
         
+        #if os(macOS)
         XCTAssertEqual(scopes.count, 2)
         XCTAssertTrue(scopes.contains("/tmp"))
         XCTAssertTrue(scopes.contains("/var"))
+        #else
+        XCTAssertEqual(scopes.count, 0)
+        #endif
     }
     
     func testDefaultSearchScopes() {
         let args = SearchArgs(query: "test")
         let scopes = QueryBuilder.extractSearchScopes(from: args)
         
+        #if os(macOS)
         XCTAssertEqual(scopes.count, 1)
         XCTAssertEqual(scopes.first, NSMetadataQueryLocalComputerScope)
+        #else
+        XCTAssertEqual(scopes.count, 0)
+        #endif
     }
     
     func testComplexExampleQuery() {

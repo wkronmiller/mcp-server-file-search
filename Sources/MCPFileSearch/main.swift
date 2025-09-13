@@ -32,7 +32,6 @@ Task {
     } catch {
         Logger.error("Server failed to start: \(error)")
         Logger.error("Stack trace: \(error.localizedDescription)")
-        fputs("Error: \(error)\n", stderr)
         exit(1)
     }
 }

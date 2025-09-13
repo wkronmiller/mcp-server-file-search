@@ -1,5 +1,7 @@
 import Foundation
+#if os(macOS)
 import CoreServices
+#endif
 
 /// Builds NSPredicate objects from SearchFilter and AdvancedQuery structures
 public struct QueryBuilder {
@@ -8,15 +10,62 @@ public struct QueryBuilder {
     /// - Parameter args: Search configuration
     /// - Returns: NSPredicate for use with NSMetadataQuery
     public static func buildPredicate(for args: SearchArgs) -> NSPredicate {
+        #if !os(macOS)
+        Logger.warning("QueryBuilder: macOS-specific predicates not available on this platform")
+        return NSPredicate(value: false) // Return a predicate that matches nothing
+        #else
         // If advanced query is provided, use it; otherwise fall back to legacy
         if let advancedQuery = args.advancedQuery {
             return buildAdvancedPredicate(from: advancedQuery)
         } else {
             return buildLegacyPredicate(from: args)
         }
+        #endif
     }
     
-    /// Builds predicate from AdvancedQuery structure
+    /// Extracts search scopes from AdvancedQuery or legacy parameters
+    /// - Parameter args: Search configuration
+    /// - Returns: Array of search scopes for NSMetadataQuery
+    public static func extractSearchScopes(from args: SearchArgs) -> [String] {
+        #if !os(macOS)
+        Logger.warning("QueryBuilder: macOS-specific search scopes not available on this platform")
+        return [] // Return empty scopes for non-macOS platforms
+        #else
+        return extractSearchScopesImpl(from: args)
+        #endif
+    }
+    
+    #if os(macOS)
+    /// Internal implementation of extractSearchScopes for macOS
+    private static func extractSearchScopesImpl(from args: SearchArgs) -> [String] {
+        // Check advanced query first
+        if let advancedQuery = args.advancedQuery {
+            let pathFilters = advancedQuery.filterGroups.flatMap { group in
+                group.filters.compactMap { filter in
+                    switch filter {
+                    case .paths(let paths):
+                        return paths
+                    default:
+                        return nil
+                    }
+                }
+            }.flatMap { $0 }
+            
+            if !pathFilters.isEmpty {
+                Logger.debug("Using path scopes from advanced query: \(pathFilters.joined(separator: ", "))")
+                return pathFilters
+            }
+        }
+        
+        // Fall back to legacy onlyIn parameter
+        if let onlyIn = args.onlyIn, !onlyIn.isEmpty {
+            Logger.debug("Using legacy onlyIn scopes: \(onlyIn.joined(separator: ", "))")
+            return onlyIn
+        }
+        
+        // Default to local computer scope
+        return [NSMetadataQueryLocalComputerScope]
+    }
     /// - Parameter advancedQuery: Advanced query with filter groups
     /// - Returns: NSPredicate combining all filter groups with OR logic
     private static func buildAdvancedPredicate(from advancedQuery: AdvancedQuery) -> NSPredicate {
@@ -174,39 +223,6 @@ public struct QueryBuilder {
         }
     }
     
-    /// Extracts search scopes from AdvancedQuery or legacy parameters
-    /// - Parameter args: Search configuration
-    /// - Returns: Array of search scopes for NSMetadataQuery
-    public static func extractSearchScopes(from args: SearchArgs) -> [String] {
-        // Check advanced query first
-        if let advancedQuery = args.advancedQuery {
-            let pathFilters = advancedQuery.filterGroups.flatMap { group in
-                group.filters.compactMap { filter in
-                    switch filter {
-                    case .paths(let paths):
-                        return paths
-                    default:
-                        return nil
-                    }
-                }
-            }.flatMap { $0 }
-            
-            if !pathFilters.isEmpty {
-                Logger.debug("Using path scopes from advanced query: \(pathFilters.joined(separator: ", "))")
-                return pathFilters
-            }
-        }
-        
-        // Fall back to legacy onlyIn parameter
-        if let onlyIn = args.onlyIn, !onlyIn.isEmpty {
-            Logger.debug("Using legacy onlyIn scopes: \(onlyIn.joined(separator: ", "))")
-            return onlyIn
-        }
-        
-        // Default to local computer scope
-        return [NSMetadataQueryLocalComputerScope]
-    }
-    
     /// Legacy predicate builder for backward compatibility
     /// - Parameter args: Search configuration using legacy parameters
     /// - Returns: NSPredicate built from legacy query structure
@@ -291,4 +307,5 @@ public struct QueryBuilder {
             return compound
         }
     }
+    #endif
 }

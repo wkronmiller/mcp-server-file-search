@@ -1,5 +1,7 @@
 @preconcurrency import Foundation
+#if os(macOS)
 @preconcurrency import CoreServices
+#endif
 
 /// Errors that can occur during Spotlight search operations
 enum SpotlightSearchError: Error {
@@ -9,6 +11,8 @@ enum SpotlightSearchError: Error {
     case failedToStart
     /// Search operation timed out
     case timeout
+    /// Platform not supported (macOS required)
+    case platformNotSupported
 }
 
 /// Actor-based wrapper for Spotlight search operations
@@ -25,6 +29,11 @@ actor SpotlightSearchActor {
     /// - Returns: Array of search results
     /// - Throws: SpotlightSearchError if search cannot be started or times out
     func search(_ args: SearchArgs) async throws -> [SearchHit] {
+        #if !os(macOS)
+        Logger.error("Spotlight search is only available on macOS")
+        throw SpotlightSearchError.platformNotSupported
+        #else
+        
         guard !isSearching else {
             Logger.warning("Search request rejected - another search is already in progress")
             throw SpotlightSearchError.searchInProgress
@@ -41,11 +50,13 @@ actor SpotlightSearchActor {
         Logger.debug("Search limit set to: \(limit)")
         
         return try await MainActorSpotlightQuery.execute(args: args, limit: limit)
+        #endif
     }
 }
 
 /// Main actor class that executes NSMetadataQuery operations
 /// Must run on main thread as required by NSMetadataQuery
+#if os(macOS)
 @MainActor
 private class MainActorSpotlightQuery {
     
@@ -215,3 +226,4 @@ private class MainActorSpotlightQuery {
         }
     }
 }
+#endif
