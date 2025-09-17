@@ -3,6 +3,12 @@ import MCP
 @testable import MCPFileSearch
 
 final class E2EFileSearchTests: XCTestCase {
+    override func setUpWithError() throws {
+        #if !os(macOS)
+        throw XCTSkip("E2E tests require macOS")
+        #endif
+    }
+    
     override func tearDown() async throws {
         await SharedMCP.shared.stop()
         try await super.tearDown()

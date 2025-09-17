@@ -32,7 +32,8 @@ public class Logger {
             let logFile = logDir.appendingPathComponent("\(pid).log")
             return logFile
         } catch {
-            fputs("Warning: Failed to create log directory: \(error)\n", stderr)
+            // Use system print for error output
+            print("Warning: Failed to create log directory: \(error)")
             return nil
         }
     }()
@@ -52,8 +53,7 @@ public class Logger {
         let logMessage = "[\(timestamp)] [\(level.rawValue)] [\(fileName):\(line)] \(function): \(message)\n"
         
         // Always log to stderr for immediate feedback
-        fputs(logMessage, stderr)
-        fflush(stderr)
+        print(logMessage, terminator: "")
         
         // Also log to file if available
         if let logFileURL = logFileURL {
